@@ -13,7 +13,7 @@ public class MainUI {
         // Kiểm tra trạng thái đăng nhập
         String loggedInRole = candidateService.isLoggedIn();
         if (loggedInRole != null) {
-            if (loggedInRole.equalsIgnoreCase("USER")) {
+            if (loggedInRole.equalsIgnoreCase("CANDIDATE")) {
                 CandidateUI.displayCandidateMenu(scanner);
             } else if (loggedInRole.equalsIgnoreCase("ADMIN")) {
                 AdminUI.displayAdminMenu(scanner);
@@ -73,7 +73,7 @@ public class MainUI {
             System.out.println("Đăng nhập thành công!");
             String role = candidateService.isLoggedIn();
             if (role != null) {
-                if (role.equalsIgnoreCase("USER")) {
+                if (role.equalsIgnoreCase("CANDIDATE")) {
                     CandidateUI.displayCandidateMenu(scanner);
                 } else if (role.equalsIgnoreCase("ADMIN")) {
                     AdminUI.displayAdminMenu(scanner);

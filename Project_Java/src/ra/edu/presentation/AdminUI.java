@@ -1,9 +1,13 @@
 package ra.edu.presentation;
 
+import ra.edu.business.service.candidateService.CandidateService;
+import ra.edu.business.service.candidateService.CandidateServiceImp;
+
 import java.util.Scanner;
 
 public class AdminUI {
     public static void displayAdminMenu(Scanner scanner) {
+        CandidateService candidateService=new CandidateServiceImp();
         do {
             System.out.println("***************ADMIN MENU**************");
             System.out.println("1. Quản lý công nghệ");
@@ -19,7 +23,7 @@ public class AdminUI {
                         TechnologyUI.displayTechnologyMenu(scanner);
                         break;
                     case 2:
-                        ra.edu.presentation.CandidateManagementUI.displayCandidateManagementMenu(scanner);
+                        CandidateManagementUI.displayCandidateManagementMenu(scanner);
                         break;
                     case 3:
                         RecruitmentPositionUI.displayRecruitmentPositionMenu(scanner);
@@ -28,8 +32,9 @@ public class AdminUI {
                         ApplicationUI.displayAdminApplicationMenu(scanner);
                         break;
                     case 5:
-                        System.out.println("Chức năng đăng xuất chưa được triển khai.");
-                        return; // Quay lại MainUI
+                        candidateService.logout();
+                        MainUI.displayMainMenu(scanner);
+                        return;
                     default:
                         System.err.println("Vui lòng chọn từ 1-5");
                 }

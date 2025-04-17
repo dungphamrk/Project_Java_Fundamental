@@ -20,7 +20,7 @@ public class Candidate implements Inputable {
     private Status status;
     private String description;
     private Date dob;
-    private UserRole role; // Sử dụng enum UserRole thay vì boolean
+    private UserRole role;
 
     public enum Gender {
         MALE, FEMALE, OTHER
@@ -30,9 +30,8 @@ public class Candidate implements Inputable {
         ACTIVE, INACTIVE
     }
 
-    // Giả định enum UserRole đã được định nghĩa
     public enum UserRole {
-        ADMIN, USER
+        ADMIN, CANDIDATE
     }
 
     // Constructors
@@ -209,18 +208,7 @@ public class Candidate implements Inputable {
         } while (!Validator.isValidDataType(genderStr, Gender.class));
         this.gender = Gender.valueOf(genderStr.toUpperCase());
 
-        // Trạng thái
-        String statusStr;
-        do {
-            System.out.print("Nhập trạng thái (active/inactive): ");
-            statusStr = scanner.nextLine();
-            if (!Validator.isValidDataType(statusStr, Status.class)) {
-                System.out.println(" Trạng thái không hợp lệ. Vui lòng nhập lại.");
-            }
-        } while (!Validator.isValidDataType(statusStr, Status.class));
-        this.status = Status.valueOf(statusStr.toUpperCase());
-
-        System.out.print("Nhập mô tả: ");
+        System.out.print("Nhập mô tả hay giới thiệu về bản thân: ");
         this.description = scanner.nextLine();
 
         // Ngày sinh
@@ -234,17 +222,8 @@ public class Candidate implements Inputable {
         } while (!Validator.isValidDataType(dobStr, LocalDate.class));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         this.dob = java.sql.Date.valueOf(LocalDate.parse(dobStr, formatter));
-
-        // Vai trò
-        String roleStr;
-        do {
-            System.out.print("Nhập vai trò (ADMIN/USER): ");
-            roleStr = scanner.nextLine();
-            if (!Validator.isValidDataType(roleStr, UserRole.class)) {
-                System.out.println(" Vai trò không hợp lệ. Vui lòng nhập lại.");
-            }
-        } while (!Validator.isValidDataType(roleStr, UserRole.class));
-        this.role = UserRole.valueOf(roleStr.toUpperCase());
+        this.status = Status.ACTIVE;
+        this.role = UserRole.CANDIDATE;
     }
 
 }
