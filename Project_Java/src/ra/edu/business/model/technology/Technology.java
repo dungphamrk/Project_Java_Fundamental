@@ -1,14 +1,12 @@
-package ra.edu.business.model;
+package ra.edu.business.model.technology;
+import ra.edu.business.model.Inputable;
+
 import java.util.Scanner;
 
 public class Technology implements Inputable {
     private int id;
     private String name;
     private Status status;
-
-    public enum Status {
-        ACTIVE, INACTIVE
-    }
 
     // Constructors
     public Technology() {

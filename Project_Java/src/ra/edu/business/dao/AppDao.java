@@ -1,11 +1,11 @@
 package ra.edu.business.dao;
 
-import ra.edu.business.model.Candidate;
+import java.util.Scanner;
 
 public interface AppDao {
     public int findAll() ;
-    public int save();
-    public int update();
-    public int delete();
+    public int save(Scanner scanner);
+    public int update(Scanner scanner);
+    public int delete(Scanner scanner);
 
 }

@@ -1,13 +1,9 @@
 package ra.edu.presentation;
-
-import ra.edu.business.service.candidateService.CandidateService;
-import ra.edu.business.service.candidateService.CandidateServiceImp;
-
 import java.util.Scanner;
+import static ra.edu.presentation.ServiceProvider.userService;
 
 public class AdminUI {
     public static void displayAdminMenu(Scanner scanner) {
-        CandidateService candidateService=new CandidateServiceImp();
         do {
             System.out.println("***************ADMIN MENU**************");
             System.out.println("1. Quản lý công nghệ");
@@ -32,7 +28,7 @@ public class AdminUI {
                         ApplicationUI.displayAdminApplicationMenu(scanner);
                         break;
                     case 5:
-                        candidateService.logout();
+                        userService.logout();
                         MainUI.displayMainMenu(scanner);
                         return;
                     default:

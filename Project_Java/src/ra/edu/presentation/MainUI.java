@@ -1,17 +1,16 @@
 package ra.edu.presentation;
 
-import ra.edu.business.model.Candidate;
-import ra.edu.business.service.candidateService.CandidateService;
-import ra.edu.business.service.candidateService.CandidateServiceImp;
-
 import java.util.Scanner;
 
+import static ra.edu.presentation.ServiceProvider.candidateService;
+import static ra.edu.presentation.ServiceProvider.userService;
+
 public class MainUI {
-    private static final CandidateService candidateService = new CandidateServiceImp();
+
 
     public static void displayMainMenu(Scanner scanner) {
         // Kiểm tra trạng thái đăng nhập
-        String loggedInRole = candidateService.isLoggedIn();
+        String loggedInRole = userService.isLoggedIn();
         if (loggedInRole != null) {
             if (loggedInRole.equalsIgnoreCase("CANDIDATE")) {
                 CandidateUI.displayCandidateMenu(scanner);
@@ -50,11 +49,10 @@ public class MainUI {
     }
 
     private static void register(Scanner scanner) {
-        Candidate candidate = new Candidate();
         System.out.println("=== Đăng ký tài khoản ===");
-            candidate.inputData(scanner);
-        int result = candidateService.register(candidate);
-        if (result == 0) {
+        int result1 = userService.save(scanner);
+        int result2 = candidateService.save(scanner);
+        if (result1 == 0 && result2 == 0) {
             System.out.println("Đăng ký thành công!");
         } else {
             System.out.println("Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.");
@@ -68,10 +66,10 @@ public class MainUI {
         System.out.print("Nhập mật khẩu: ");
         String password = scanner.nextLine();
 
-        int result = candidateService.login(username, password);
+        int result = userService.login(username, password);
         if (result == 0) {
             System.out.println("Đăng nhập thành công!");
-            String role = candidateService.isLoggedIn();
+            String role = userService.isLoggedIn();
             if (role != null) {
                 if (role.equalsIgnoreCase("CANDIDATE")) {
                     CandidateUI.displayCandidateMenu(scanner);

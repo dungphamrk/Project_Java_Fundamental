@@ -1,8 +1,13 @@
 package ra.edu.presentation;
 
+import ra.edu.business.service.technology.TechnologyService;
+import ra.edu.business.service.technology.TechnologyServiceImp;
+
 import java.util.Scanner;
 
 public class TechnologyUI {
+    private static final TechnologyService technologyService = new TechnologyServiceImp();
+
     public static void displayTechnologyMenu(Scanner scanner) {
         do {
             System.out.println("***************TECHNOLOGY MANAGEMENT**************");
@@ -16,16 +21,32 @@ public class TechnologyUI {
                 int choice = Integer.parseInt(scanner.nextLine());
                 switch (choice) {
                     case 1:
-                        System.out.println("Chức năng lấy danh sách công nghệ chưa được triển khai.");
+                        int count = technologyService.findAll();
+                        System.out.println("Tổng số công nghệ: " + count);
                         break;
                     case 2:
-                        System.out.println("Chức năng thêm công nghệ chưa được triển khai.");
+                        int saveResult = technologyService.save(scanner);
+                        if (saveResult > 0) {
+                            System.out.println("Thêm công nghệ thành công!");
+                        } else {
+                            System.err.println("Thêm công nghệ thất bại.");
+                        }
                         break;
                     case 3:
-                        System.out.println("Chức năng sửa công nghệ chưa được triển khai.");
+                        int updateResult = technologyService.update(scanner);
+                        if (updateResult > 0) {
+                            System.out.println("Cập nhật công nghệ thành công!");
+                        } else {
+                            System.err.println("Cập nhật công nghệ thất bại.");
+                        }
                         break;
                     case 4:
-                        System.out.println("Chức năng xóa công nghệ chưa được triển khai.");
+                        int deleteResult = technologyService.delete(scanner);
+                        if (deleteResult > 0) {
+                            System.out.println("Xóa công nghệ thành công!");
+                        } else {
+                            System.err.println("Xóa công nghệ thất bại.");
+                        }
                         break;
                     case 5:
                         return; // Quay lại AdminUI
