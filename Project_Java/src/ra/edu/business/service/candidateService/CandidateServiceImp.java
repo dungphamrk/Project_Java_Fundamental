@@ -1,6 +1,5 @@
 package ra.edu.business.service.candidateService;
 
-
 import ra.edu.business.dao.candidate.CandidateDao;
 import ra.edu.business.dao.candidate.CandidateDaoImp;
 import ra.edu.business.model.candidate.Candidate;
@@ -9,13 +8,14 @@ import java.util.Scanner;
 
 public class CandidateServiceImp implements CandidateService {
     private final CandidateDao candidateDao;
+
     public CandidateServiceImp() {
         this.candidateDao = new CandidateDaoImp();
     }
 
     @Override
-    public int findAll(int pageNumber,int  pageSize) {
-        return candidateDao.findAll(pageNumber,pageSize);
+    public int findAll(int pageNumber, int pageSize) {
+        return candidateDao.findAll(pageNumber, pageSize);
     }
 
     @Override
@@ -33,4 +33,8 @@ public class CandidateServiceImp implements CandidateService {
         return candidateDao.delete(scanner);
     }
 
+    @Override
+    public int changePassword(int userId, String oldPassword, String newPassword) {
+        return candidateDao.changePassword(userId, oldPassword, newPassword);
+    }
 }

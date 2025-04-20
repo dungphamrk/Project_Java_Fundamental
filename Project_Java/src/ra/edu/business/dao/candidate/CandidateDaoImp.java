@@ -2,7 +2,7 @@ package ra.edu.business.dao.candidate;
 
 import ra.edu.business.config.ConnectionDB;
 import ra.edu.business.model.candidate.Candidate;
-import ra.edu.business.model.user.User;
+import ra.edu.presentation.ServiceProvider;
 
 import java.sql.*;
 import java.util.Scanner;
@@ -10,7 +10,7 @@ import java.util.Scanner;
 public class CandidateDaoImp implements CandidateDao {
 
     @Override
-    public int findAll(int pageNumber,int  pageSize) {
+    public int findAll(int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int count = 0;
@@ -41,85 +41,13 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public int update(Scanner scanner) {
-        Connection conn = null;
-        CallableStatement callStmt = null;
-        int returnCode = -1;
-        try {
-            conn = ConnectionDB.openConnection();
-            conn.setAutoCommit(false);
-            callStmt = conn.prepareCall("{call sp_UpdateCandidate(?,?,?,?,?,?,?,?,?)}");
-            // Giả định nhập dữ liệu từ Scanner hoặc Candidate object
-            Candidate candidate = new Candidate();
-            candidate.inputData(scanner);
-            callStmt.setInt(1, candidate.getId());
-            callStmt.setString(2, candidate.getName());
-            callStmt.setString(3, candidate.getEmail());
-            callStmt.setString(4, candidate.getPhone());
-            callStmt.setInt(5, candidate.getExperience());
-            callStmt.setString(6, candidate.getGender().name().toLowerCase());
-            callStmt.setString(7, candidate.getDescription());
-            if (candidate.getDob() != null) {
-                callStmt.setDate(8, java.sql.Date.valueOf(candidate.getDob()));
-            } else {
-                callStmt.setNull(8, Types.DATE);
-            }
-            callStmt.registerOutParameter(9, Types.INTEGER);
-            callStmt.execute();
-            returnCode = callStmt.getInt(9);
-            conn.commit();
-            return returnCode;
-        } catch (SQLException e) {
-            System.err.println("Lỗi SQL khi cập nhật ứng viên: " + e.getMessage());
-            try {
-                conn.rollback();
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            }
-            return 0;
-        } finally {
-            ConnectionDB.closeConnection(conn, callStmt);
-        }
-    }
-
-    @Override
-    public int delete(Scanner scanner) {
-        Connection conn = null;
-        CallableStatement callStmt = null;
-        int returnCode = -1;
-        try {
-            conn = ConnectionDB.openConnection();
-            conn.setAutoCommit(false);
-            callStmt = conn.prepareCall("{call sp_DeleteCandidate(?,?)}");
-            System.out.println("Nhập ID ứng viên cần xóa:");
-            int candidateId = Integer.parseInt(scanner.next());
-            callStmt.setInt(1, candidateId);
-            callStmt.registerOutParameter(2, Types.INTEGER);
-            callStmt.execute();
-            returnCode = callStmt.getInt(2);
-            conn.commit();
-            return returnCode;
-        } catch (SQLException e) {
-            System.err.println("Lỗi SQL khi xóa ứng viên: " + e.getMessage());
-            try {
-                conn.rollback();
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            }
-            return 0;
-        } finally {
-            ConnectionDB.closeConnection(conn, callStmt);
-        }
-    }
-
-    @Override
     public int save(Candidate newCandidate) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int returnCode = -1;
         try {
             conn = ConnectionDB.openConnection();
-            conn.setAutoCommit(false);
+            conn.setAutoCommit(false); // Tắt auto-commit
             callStmt = conn.prepareCall("{call sp_RegisterCandidate(?,?,?,?,?,?,?,?,?)}");
             callStmt.setInt(1, newCandidate.getId());
             callStmt.setString(2, newCandidate.getName());
@@ -136,14 +64,173 @@ public class CandidateDaoImp implements CandidateDao {
             callStmt.registerOutParameter(9, Types.INTEGER);
             callStmt.execute();
             returnCode = callStmt.getInt(9);
-            conn.commit();
+            if (returnCode == 0) {
+                conn.commit(); // Commit nếu thành công
+            } else {
+                conn.rollback(); // Rollback nếu thất bại
+            }
+            return returnCode;
         } catch (SQLException e) {
-            System.err.println("Có lỗi SQL khi đăng ký: " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Lỗi khác khi đăng ký: " + e.getMessage());
+            System.err.println("Lỗi SQL khi đăng ký: " + e.getMessage());
+            try {
+                if (conn != null) {
+                    conn.rollback(); // Rollback nếu có lỗi
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+            return 0;
         } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true); // Khôi phục auto-commit
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
-        return returnCode;
+    }
+
+    @Override
+    public int update(Scanner scanner) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        int returnCode = -1;
+        try {
+            conn = ConnectionDB.openConnection();
+            conn.setAutoCommit(false); // Tắt auto-commit
+            System.out.println("Nhập thông tin mới cho hồ sơ:");
+            callStmt = conn.prepareCall("{call sp_UpdateCandidate(?,?,?,?,?,?,?,?,?)}");
+            Candidate candidate = new Candidate();
+            candidate.setId(ServiceProvider.userService.getCurrentUserId()); // Lấy ID ứng viên hiện tại
+            candidate.inputData(scanner);
+            callStmt.setInt(1, candidate.getId());
+            callStmt.setString(2, candidate.getName());
+            callStmt.setString(3, candidate.getEmail());
+            callStmt.setString(4, candidate.getPhone());
+            callStmt.setInt(5, candidate.getExperience());
+            callStmt.setString(6, candidate.getGender().name().toLowerCase());
+            callStmt.setString(7, candidate.getDescription());
+            if (candidate.getDob() != null) {
+                callStmt.setDate(8, java.sql.Date.valueOf(candidate.getDob()));
+            } else {
+                callStmt.setNull(8, Types.DATE);
+            }
+            callStmt.registerOutParameter(9, Types.INTEGER);
+            callStmt.execute();
+            returnCode = callStmt.getInt(9);
+            if (returnCode == 0) {
+                conn.commit(); // Commit nếu thành công
+            } else {
+                conn.rollback(); // Rollback nếu thất bại
+            }
+            return returnCode;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi cập nhật ứng viên: " + e.getMessage());
+            try {
+                if (conn != null) {
+                    conn.rollback(); // Rollback nếu có lỗi
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+            return 0;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true); // Khôi phục auto-commit
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int delete(Scanner scanner) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        int returnCode = -1;
+        try {
+            conn = ConnectionDB.openConnection();
+            conn.setAutoCommit(false); // Tắt auto-commit
+            callStmt = conn.prepareCall("{call sp_DeleteCandidate(?,?)}");
+            System.out.println("Nhập ID ứng viên cần xóa:");
+            int candidateId = Integer.parseInt(scanner.nextLine());
+            callStmt.setInt(1, candidateId);
+            callStmt.registerOutParameter(2, Types.INTEGER);
+            callStmt.execute();
+            returnCode = callStmt.getInt(2);
+            if (returnCode == 0) {
+                conn.commit();
+            } else {
+                conn.rollback();
+            }
+            return returnCode;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi xóa ứng viên: " + e.getMessage());
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+            return 0;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int changePassword(int userId, String oldPassword, String newPassword) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        int returnCode = -1;
+        try {
+            conn = ConnectionDB.openConnection();
+            conn.setAutoCommit(false); // Tắt auto-commit
+            callStmt = conn.prepareCall("{call sp_UpdatePassword(?,?,?,?)}");
+            callStmt.setInt(1, userId);
+            callStmt.setString(2, oldPassword);
+            callStmt.setString(3, newPassword);
+            callStmt.registerOutParameter(4, Types.INTEGER);
+            callStmt.execute();
+            returnCode = callStmt.getInt(4);
+            if (returnCode == 1) {
+                conn.commit();
+            } else {
+                conn.rollback();
+            }
+            return returnCode;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi đổi mật khẩu: " + e.getMessage());
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+            return 0;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
     }
 }

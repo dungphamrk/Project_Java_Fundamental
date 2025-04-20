@@ -16,7 +16,7 @@ public class UserDaoImp implements UserDao {
 
         try {
             conn = ConnectionDB.openConnection();
-            callStmt = conn.prepareCall("{call sp_Login(?,?,?,?,?)}");
+            callStmt = conn.prepareCall("{call sp_Login(?,?,?,?)}");
             callStmt.setString(1, username);
             callStmt.setString(2, password);
             callStmt.registerOutParameter(3, Types.INTEGER); // userId
@@ -73,6 +73,31 @@ public class UserDaoImp implements UserDao {
         return null;
     }
 
+    @Override
+    public int getCurrentUserId() {
+        File file = new File("login_info.txt");
+        if (file.exists() && file.length() > 0) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("user_id=")) {
+                        String userIdStr = line.substring("user_id=".length());
+                        try {
+                            return Integer.parseInt(userIdStr);
+                        } catch (NumberFormatException e) {
+                            System.err.println("Lỗi: user_id trong file không hợp lệ: " + userIdStr);
+                            return -1;
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Lỗi khi đọc file đăng nhập: " + e.getMessage());
+            }
+        }
+        System.err.println("Không tìm thấy thông tin đăng nhập hoặc người dùng chưa đăng nhập.");
+        return -1;
+    }
+
     private void writeLoginInfoToFile(int userId, String role) {
         String filePath = "login_info.txt";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
@@ -80,19 +105,19 @@ public class UserDaoImp implements UserDao {
             writer.newLine();
             writer.write("role=" + role);
             writer.newLine();
-            System.out.println("Đăng nhập thành công " + filePath);
+            System.out.println("Đã ghi thông tin đăng nhập vào " + filePath);
         } catch (IOException e) {
             System.err.println("Lỗi khi ghi file đăng nhập: " + e.getMessage());
         }
     }
 
     @Override
-    public int findAll(int pageNumber,int pageSize) {
+    public int findAll(int pageNumber, int pageSize) {
         return 0;
     }
 
     @Override
-    public int save(User user ) {
+    public int save(User user) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int returnCode = -1;
@@ -111,9 +136,22 @@ public class UserDaoImp implements UserDao {
             conn.commit();
         } catch (SQLException e) {
             System.err.println("Có lỗi SQL khi đăng ký: " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Lỗi khác khi đăng ký: " + e.getMessage());
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+            return -1;
         } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
         return returnCode;
@@ -129,4 +167,3 @@ public class UserDaoImp implements UserDao {
         return 0;
     }
 }
-

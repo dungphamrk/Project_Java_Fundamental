@@ -4,5 +4,5 @@ import ra.edu.business.dao.AppDao;
 import ra.edu.business.model.candidate.Candidate;
 
 public interface CandidateDao extends AppDao<Candidate> {
-
+    int changePassword(int userId, String oldPassword, String newPassword);
 }

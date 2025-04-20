@@ -7,4 +7,5 @@ public interface UserService extends AppService<User> {
     int login(String username, String password);
     void logout();
     String isLoggedIn();
+    int getCurrentUserId();
 }

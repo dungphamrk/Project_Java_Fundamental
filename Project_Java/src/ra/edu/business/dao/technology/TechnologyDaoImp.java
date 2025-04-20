@@ -1,8 +1,12 @@
 package ra.edu.business.dao.technology;
+
 import ra.edu.business.config.ConnectionDB;
+import ra.edu.business.model.technology.Status;
 import ra.edu.business.model.technology.Technology;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class TechnologyDaoImp implements TechnologyDao {
@@ -54,17 +58,30 @@ public class TechnologyDaoImp implements TechnologyDao {
             callStmt.registerOutParameter(3, Types.INTEGER);
             callStmt.execute();
             returnCode = callStmt.getInt(3);
-            conn.commit();
+            if (returnCode == 1) {
+                conn.commit();
+            } else {
+                conn.rollback();
+            }
             return returnCode;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi thêm công nghệ: " + e.getMessage());
             try {
-                conn.rollback();
+                if (conn != null) {
+                    conn.rollback();
+                }
             } catch (SQLException ex) {
                 System.err.println("Lỗi khi rollback: " + ex.getMessage());
             }
             return 0;
         } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
@@ -88,17 +105,30 @@ public class TechnologyDaoImp implements TechnologyDao {
             callStmt.registerOutParameter(4, Types.INTEGER);
             callStmt.execute();
             returnCode = callStmt.getInt(4);
-            conn.commit();
+            if (returnCode == 1) {
+                conn.commit();
+            } else {
+                conn.rollback();
+            }
             return returnCode;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi cập nhật công nghệ: " + e.getMessage());
             try {
-                conn.rollback();
+                if (conn != null) {
+                    conn.rollback();
+                }
             } catch (SQLException ex) {
                 System.err.println("Lỗi khi rollback: " + ex.getMessage());
             }
             return 0;
         } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
@@ -118,17 +148,199 @@ public class TechnologyDaoImp implements TechnologyDao {
             callStmt.registerOutParameter(2, Types.INTEGER);
             callStmt.execute();
             returnCode = callStmt.getInt(2);
-            conn.commit();
+            if (returnCode == 1) {
+                conn.commit();
+            } else {
+                conn.rollback();
+            }
             return returnCode;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi xóa công nghệ: " + e.getMessage());
             try {
-                conn.rollback();
+                if (conn != null) {
+                    conn.rollback();
+                }
             } catch (SQLException ex) {
                 System.err.println("Lỗi khi rollback: " + ex.getMessage());
             }
             return 0;
         } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public Technology findById(int id) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_FindTechnologyById(?)}");
+            callStmt.setInt(1, id);
+            ResultSet rs = callStmt.executeQuery();
+            if (rs.next()) {
+                Technology technology = new Technology();
+                technology.setId(rs.getInt("id"));
+                technology.setName(rs.getString("name"));
+                technology.setStatus(Status.valueOf(rs.getString("status")));
+                return technology;
+            }
+            return null;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi tìm kiếm công nghệ theo ID: " + e.getMessage());
+            return null;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int searchByName(String keyword, int pageNumber, int pageSize) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        int count = 0;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_SearchTechnologies(?,?,?,?)}");
+            callStmt.setString(1, "%" + keyword + "%");
+            callStmt.setInt(2, pageNumber);
+            callStmt.setInt(3, pageSize);
+            callStmt.registerOutParameter(4, Types.INTEGER);
+            ResultSet rs = callStmt.executeQuery();
+            int totalPages = callStmt.getInt(4);
+            System.out.println("Kết quả tìm kiếm (Trang " + pageNumber + "/" + totalPages + "):");
+            System.out.println("--------------------------------------------------");
+            while (rs.next()) {
+                System.out.println("ID: " + rs.getInt("id") +
+                        ", Tên: " + rs.getString("name") +
+                        ", Trạng thái: " + rs.getString("status"));
+                count++;
+            }
+            if (count == 0) {
+                System.out.println("Không tìm thấy công nghệ nào trên trang này.");
+            }
+            return totalPages;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi tìm kiếm công nghệ: " + e.getMessage());
+            return 0;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public List<Technology> getCandidateTechnologies(int candidateId) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        List<Technology> technologies = new ArrayList<>();
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_GetCandidateTechnologies(?)}");
+            callStmt.setInt(1, candidateId);
+            ResultSet rs = callStmt.executeQuery();
+            while (rs.next()) {
+                Technology technology = new Technology();
+                technology.setId(rs.getInt("id"));
+                technology.setName(rs.getString("name"));
+                technology.setStatus(Status.valueOf(rs.getString("status")));
+                technologies.add(technology);
+            }
+            return technologies;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi lấy danh sách công nghệ của ứng viên: " + e.getMessage());
+            return null;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int addCandidateTechnology(int candidateId, int technologyId) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        int returnCode = -1;
+        try {
+            conn = ConnectionDB.openConnection();
+            conn.setAutoCommit(false);
+            callStmt = conn.prepareCall("{call sp_AddCandidateTechnology(?,?,?)}");
+            callStmt.setInt(1, candidateId);
+            callStmt.setInt(2, technologyId);
+            callStmt.registerOutParameter(3, Types.INTEGER);
+            callStmt.execute();
+            returnCode = callStmt.getInt(3);
+            if (returnCode == 1) {
+                conn.commit();
+            } else {
+                conn.rollback();
+            }
+            return returnCode;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi thêm công nghệ cho ứng viên: " + e.getMessage());
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+            return 0;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int removeCandidateTechnology(int candidateId, int technologyId) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        int returnCode = -1;
+        try {
+            conn = ConnectionDB.openConnection();
+            conn.setAutoCommit(false);
+            callStmt = conn.prepareCall("{call sp_RemoveCandidateTechnology(?,?,?)}");
+            callStmt.setInt(1, candidateId);
+            callStmt.setInt(2, technologyId);
+            callStmt.registerOutParameter(3, Types.INTEGER);
+            callStmt.execute();
+            returnCode = callStmt.getInt(3);
+            if (returnCode == 1) {
+                conn.commit();
+            } else {
+                conn.rollback();
+            }
+            return returnCode;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi xóa công nghệ của ứng viên: " + e.getMessage());
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+            return 0;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }

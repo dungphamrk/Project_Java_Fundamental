@@ -29,6 +29,11 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
+    public int getCurrentUserId() {
+        return userDao.getCurrentUserId();
+    }
+
+    @Override
     public int findAll(int pageNumber, int pageSize) {
         return 0;
     }
