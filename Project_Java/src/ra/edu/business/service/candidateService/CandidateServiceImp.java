@@ -3,6 +3,7 @@ package ra.edu.business.service.candidateService;
 
 import ra.edu.business.dao.candidate.CandidateDao;
 import ra.edu.business.dao.candidate.CandidateDaoImp;
+import ra.edu.business.model.candidate.Candidate;
 
 import java.util.Scanner;
 
@@ -13,13 +14,13 @@ public class CandidateServiceImp implements CandidateService {
     }
 
     @Override
-    public int findAll() {
-        return candidateDao.findAll();
+    public int findAll(int pageNumber,int  pageSize) {
+        return candidateDao.findAll(pageNumber,pageSize);
     }
 
     @Override
-    public int save(Scanner scanner) {
-        return candidateDao.save(scanner);
+    public int save(Candidate candidate) {
+        return candidateDao.save(candidate);
     }
 
     @Override
@@ -31,7 +32,5 @@ public class CandidateServiceImp implements CandidateService {
     public int delete(Scanner scanner) {
         return candidateDao.delete(scanner);
     }
-
-
 
 }

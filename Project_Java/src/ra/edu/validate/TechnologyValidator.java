@@ -9,7 +9,6 @@ import java.sql.Types;
 import java.util.Scanner;
 
 public class TechnologyValidator {
-
     public static String inputName(Scanner scanner) {
         String name;
         boolean checkResult = false;
@@ -40,17 +39,5 @@ public class TechnologyValidator {
             }
         } while (name.trim().isEmpty() || checkResult);
         return name;
-    }
-
-    public static Status inputStatus(Scanner scanner) {
-        String statusStr;
-        do {
-            System.out.print("Nhập trạng thái (active/inactive): ");
-            statusStr = scanner.nextLine().toUpperCase();
-            if (!Validator.isValidDataType(statusStr, Status.class)) {
-                System.out.println("Trạng thái không hợp lệ. Vui lòng nhập lại.");
-            }
-        } while (!Validator.isValidDataType(statusStr, Status.class));
-        return Status.valueOf(statusStr);
     }
 }

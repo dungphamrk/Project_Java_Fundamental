@@ -2,6 +2,8 @@ package ra.edu.presentation;
 
 import java.util.Scanner;
 
+import static ra.edu.presentation.ServiceProvider.userService;
+
 public class CandidateUI {
     public static void displayCandidateMenu(Scanner scanner) {
         do {
@@ -24,8 +26,8 @@ public class CandidateUI {
                         System.out.println("Chức năng xem và nộp đơn ứng tuyển chưa được triển khai.");
                         break;
                     case 4:
-                        System.out.println("Chức năng đăng xuất chưa được triển khai.");
-                        return; // Quay lại MainUI
+                        userService.logout();
+                        break;
                     default:
                         System.err.println("Vui lòng chọn từ 1-4");
                 }

@@ -1,4 +1,5 @@
 package ra.edu.business.model;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -14,7 +15,6 @@ public class RecruitmentPosition implements Inputable {
     private Date createdDate;
     private Date expiredDate;
 
-    // Constructors
     public RecruitmentPosition() {
     }
 

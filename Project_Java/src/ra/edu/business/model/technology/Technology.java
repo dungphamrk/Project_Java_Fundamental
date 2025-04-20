@@ -1,5 +1,6 @@
 package ra.edu.business.model.technology;
 import ra.edu.business.model.Inputable;
+import ra.edu.validate.TechnologyValidator;
 
 import java.util.Scanner;
 
@@ -8,7 +9,6 @@ public class Technology implements Inputable {
     private String name;
     private Status status;
 
-    // Constructors
     public Technology() {
     }
 
@@ -18,10 +18,7 @@ public class Technology implements Inputable {
         this.status = status;
     }
 
-    // Getters and Setters
-    public int getId() {
-        return id;
-    }
+    public int getId() { return id; }
 
     public void setId(int id) {
         this.id = id;
@@ -45,9 +42,7 @@ public class Technology implements Inputable {
 
     @Override
     public void inputData(Scanner scanner) {
-        System.out.println("Nhập tên công nghệ:");
-        this.name = scanner.nextLine();
-        System.out.println("Nhập trạng thái (active/inactive):");
-        this.status = Status.valueOf(scanner.nextLine().toUpperCase());
+        this.name = TechnologyValidator.inputName(scanner);
+        this.status = Status.ACTIVE;
     }
 }

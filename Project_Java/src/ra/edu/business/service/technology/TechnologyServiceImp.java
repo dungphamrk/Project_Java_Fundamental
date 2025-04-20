@@ -1,6 +1,8 @@
 package ra.edu.business.service.technology;
 import ra.edu.business.dao.technology.TechnologyDao;
 import ra.edu.business.dao.technology.TechnologyDaoImp;
+import ra.edu.business.model.technology.Technology;
+
 import java.util.Scanner;
 
 public class TechnologyServiceImp implements TechnologyService {
@@ -11,13 +13,13 @@ public class TechnologyServiceImp implements TechnologyService {
     }
 
     @Override
-    public int findAll() {
-        return technologyDao.findAll();
+    public int findAll(int pageNumber, int pageSize) {
+        return technologyDao.findAll(pageNumber, pageSize);
     }
 
     @Override
-    public int save(Scanner scanner) {
-        return technologyDao.save(scanner);
+    public int save(Technology technology) {
+        return technologyDao.save(technology);
     }
 
     @Override

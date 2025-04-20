@@ -8,15 +8,19 @@ import java.util.Scanner;
 public class TechnologyDaoImp implements TechnologyDao {
 
     @Override
-    public int findAll() {
+    public int findAll(int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int count = 0;
         try {
             conn = ConnectionDB.openConnection();
-            callStmt = conn.prepareCall("{call sp_FindAllTechnologies()}");
+            callStmt = conn.prepareCall("{call sp_FindAllTechnologies(?,?,?)}");
+            callStmt.setInt(1, pageNumber);
+            callStmt.setInt(2, pageSize);
+            callStmt.registerOutParameter(3, Types.INTEGER);
             ResultSet rs = callStmt.executeQuery();
-            System.out.println("Danh sách công nghệ:");
+            int totalPages = callStmt.getInt(3);
+            System.out.println("Danh sách công nghệ (Trang " + pageNumber + "/" + totalPages + "):");
             System.out.println("--------------------------------------------------");
             while (rs.next()) {
                 System.out.println("ID: " + rs.getInt("id") +
@@ -25,9 +29,9 @@ public class TechnologyDaoImp implements TechnologyDao {
                 count++;
             }
             if (count == 0) {
-                System.out.println("Không có công nghệ nào.");
+                System.out.println("Không có công nghệ nào trên trang này.");
             }
-            return count;
+            return totalPages;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi lấy danh sách công nghệ: " + e.getMessage());
             return 0;
@@ -37,15 +41,13 @@ public class TechnologyDaoImp implements TechnologyDao {
     }
 
     @Override
-    public int save(Scanner scanner) {
+    public int save(Technology technology) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int returnCode = -1;
         try {
             conn = ConnectionDB.openConnection();
             conn.setAutoCommit(false);
-            Technology technology = new Technology();
-            technology.inputData(scanner);
             callStmt = conn.prepareCall("{call sp_CreateTechnology(?,?,?)}");
             callStmt.setString(1, technology.getName());
             callStmt.setString(2, technology.getStatus().name().toUpperCase());

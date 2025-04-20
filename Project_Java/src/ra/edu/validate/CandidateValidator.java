@@ -12,7 +12,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 
 public class CandidateValidator {
-
     public static String inputName(Scanner scanner) {
         String name;
         do {

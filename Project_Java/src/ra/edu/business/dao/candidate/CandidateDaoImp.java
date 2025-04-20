@@ -2,6 +2,7 @@ package ra.edu.business.dao.candidate;
 
 import ra.edu.business.config.ConnectionDB;
 import ra.edu.business.model.candidate.Candidate;
+import ra.edu.business.model.user.User;
 
 import java.sql.*;
 import java.util.Scanner;
@@ -9,13 +10,14 @@ import java.util.Scanner;
 public class CandidateDaoImp implements CandidateDao {
 
     @Override
-    public int findAll() {
+    public int findAll(int pageNumber,int  pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int count = 0;
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_FindAllCandidates()}");
+
             ResultSet rs = callStmt.executeQuery();
             System.out.println("Danh sách ứng viên:");
             System.out.println("--------------------------------------------------");
@@ -111,31 +113,29 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public int save(Scanner scanner) {
+    public int save(Candidate newCandidate) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int returnCode = -1;
-
         try {
             conn = ConnectionDB.openConnection();
             conn.setAutoCommit(false);
-            Candidate candidate = new Candidate();
-            candidate.inputData(scanner);
-            callStmt = conn.prepareCall("{call sp_RegisterCandidate(?,?,?,?,?,?,?,?)}");
-            callStmt.setString(1, candidate.getName());
-            callStmt.setString(2, candidate.getEmail());
-            callStmt.setString(3, candidate.getPhone());
-            callStmt.setInt(4, candidate.getExperience());
-            callStmt.setString(5, candidate.getGender().name().toLowerCase());
-            callStmt.setString(6, candidate.getDescription());
-            if (candidate.getDob() != null) {
-                callStmt.setDate(7, java.sql.Date.valueOf(candidate.getDob()));
+            callStmt = conn.prepareCall("{call sp_RegisterCandidate(?,?,?,?,?,?,?,?,?)}");
+            callStmt.setInt(1, newCandidate.getId());
+            callStmt.setString(2, newCandidate.getName());
+            callStmt.setString(3, newCandidate.getEmail());
+            callStmt.setString(4, newCandidate.getPhone());
+            callStmt.setInt(5, newCandidate.getExperience());
+            callStmt.setString(6, newCandidate.getGender().name().toLowerCase());
+            callStmt.setString(7, newCandidate.getDescription());
+            if (newCandidate.getDob() != null) {
+                callStmt.setDate(8, java.sql.Date.valueOf(newCandidate.getDob()));
             } else {
-                callStmt.setNull(7, Types.DATE);
+                callStmt.setNull(8, Types.DATE);
             }
-            callStmt.registerOutParameter(8, Types.INTEGER);
+            callStmt.registerOutParameter(9, Types.INTEGER);
             callStmt.execute();
-            returnCode = callStmt.getInt(8);
+            returnCode = callStmt.getInt(9);
             conn.commit();
         } catch (SQLException e) {
             System.err.println("Có lỗi SQL khi đăng ký: " + e.getMessage());

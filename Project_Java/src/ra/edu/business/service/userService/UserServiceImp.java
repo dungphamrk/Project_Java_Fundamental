@@ -2,6 +2,7 @@ package ra.edu.business.service.userService;
 
 import ra.edu.business.dao.user.UserDao;
 import ra.edu.business.dao.user.UserDaoImp;
+import ra.edu.business.model.user.User;
 
 import java.util.Scanner;
 
@@ -28,13 +29,13 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public int findAll() {
+    public int findAll(int pageNumber, int pageSize) {
         return 0;
     }
 
     @Override
-    public int save(Scanner scanner) {
-        return userDao.save(scanner);
+    public int save(User user) {
+        return userDao.save(user);
     }
 
     @Override

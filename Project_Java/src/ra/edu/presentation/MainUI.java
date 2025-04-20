@@ -1,5 +1,8 @@
 package ra.edu.presentation;
 
+import ra.edu.business.model.candidate.Candidate;
+import ra.edu.business.model.user.User;
+
 import java.util.Scanner;
 
 import static ra.edu.presentation.ServiceProvider.candidateService;
@@ -50,8 +53,14 @@ public class MainUI {
 
     private static void register(Scanner scanner) {
         System.out.println("=== Đăng ký tài khoản ===");
-        int result1 = userService.save(scanner);
-        int result2 = candidateService.save(scanner);
+        Candidate newCandidate  = new Candidate();
+        newCandidate.inputData(scanner);
+        User newUser = new User();
+        newUser.inputData(scanner);
+        int result2 = userService.save(newUser);
+        newCandidate.setId(newUser.getId());
+        System.out.println(newCandidate.getId());
+        int result1 = candidateService.save(newCandidate);
         if (result1 == 0 && result2 == 0) {
             System.out.println("Đăng ký thành công!");
         } else {

@@ -4,10 +4,7 @@ import ra.edu.business.config.ConnectionDB;
 import ra.edu.business.model.user.User;
 
 import java.io.*;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.util.Scanner;
 
 public class UserDaoImp implements UserDao {
@@ -90,26 +87,27 @@ public class UserDaoImp implements UserDao {
     }
 
     @Override
-    public int findAll() {
+    public int findAll(int pageNumber,int pageSize) {
         return 0;
     }
 
     @Override
-    public int save(Scanner scanner) {
+    public int save(User user ) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int returnCode = -1;
         try {
             conn = ConnectionDB.openConnection();
             conn.setAutoCommit(false);
-            User user = new User();
-            user.inputData(scanner);
-            callStmt = conn.prepareCall("{call sp_RegisterUser(?,?,?)}");
+
+            callStmt = conn.prepareCall("{call sp_RegisterUser(?,?,?,?)}");
             callStmt.setString(1, user.getUsername());
             callStmt.setString(2, user.getPassword());
             callStmt.registerOutParameter(3, Types.INTEGER);
+            callStmt.registerOutParameter(4, Types.INTEGER);
             callStmt.execute();
             returnCode = callStmt.getInt(3);
+            user.setId(callStmt.getInt(4));
             conn.commit();
         } catch (SQLException e) {
             System.err.println("Có lỗi SQL khi đăng ký: " + e.getMessage());
