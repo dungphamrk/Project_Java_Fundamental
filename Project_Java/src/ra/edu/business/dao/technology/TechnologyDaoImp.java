@@ -180,23 +180,51 @@ public class TechnologyDaoImp implements TechnologyDao {
     public Technology findById(int id) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_FindTechnologyById(?)}");
             callStmt.setInt(1, id);
-            ResultSet rs = callStmt.executeQuery();
-            if (rs.next()) {
-                Technology technology = new Technology();
-                technology.setId(rs.getInt("id"));
-                technology.setName(rs.getString("name"));
-                technology.setStatus(Status.valueOf(rs.getString("status")));
-                return technology;
+
+            boolean hasResults = callStmt.execute();
+
+            int found = 0;
+            if (hasResults) {
+                rs = callStmt.getResultSet();
+                if (rs.next()) {
+                    found = rs.getInt("found");
+                }
+                rs.close();
             }
+
+            // Xử lý ResultSet thứ hai (thông tin công nghệ)
+            if (found > 0 && callStmt.getMoreResults()) {
+                rs = callStmt.getResultSet();
+                if (rs.next()) {
+                    Technology technology = new Technology();
+                    technology.setId(rs.getInt("id"));
+                    technology.setName(rs.getString("name"));
+                    technology.setStatus(Status.valueOf(rs.getString("status").toUpperCase()));
+                    return technology;
+                }
+            }
+
+            System.out.println("Không tìm thấy công nghệ với ID: " + id);
             return null;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi tìm kiếm công nghệ theo ID: " + e.getMessage());
             return null;
+        } catch (IllegalArgumentException e) {
+            System.err.println("Trạng thái công nghệ không hợp lệ: " + e.getMessage());
+            return null;
         } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException e) {
+                    System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+                }
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
@@ -206,26 +234,41 @@ public class TechnologyDaoImp implements TechnologyDao {
         Connection conn = null;
         CallableStatement callStmt = null;
         int count = 0;
+        int totalPages = 0;
         try {
             conn = ConnectionDB.openConnection();
-            callStmt = conn.prepareCall("{call sp_SearchTechnologies(?,?,?,?)}");
+            callStmt = conn.prepareCall("{call sp_SearchTechnologies(?,?,?)}");
             callStmt.setString(1, "%" + keyword + "%");
             callStmt.setInt(2, pageNumber);
             callStmt.setInt(3, pageSize);
-            callStmt.registerOutParameter(4, Types.INTEGER);
-            ResultSet rs = callStmt.executeQuery();
-            int totalPages = callStmt.getInt(4);
-            System.out.println("Kết quả tìm kiếm (Trang " + pageNumber + "/" + totalPages + "):");
-            System.out.println("--------------------------------------------------");
-            while (rs.next()) {
-                System.out.println("ID: " + rs.getInt("id") +
-                        ", Tên: " + rs.getString("name") +
-                        ", Trạng thái: " + rs.getString("status"));
-                count++;
+
+            boolean hasResults = callStmt.execute();
+
+            if (hasResults) {
+                ResultSet rs = callStmt.getResultSet();
+                if (rs.next()) {
+                    totalPages = rs.getInt("totalPages");
+                }
+                rs.close();
             }
-            if (count == 0) {
-                System.out.println("Không tìm thấy công nghệ nào trên trang này.");
+
+            // Xử lý ResultSet thứ hai (danh sách công nghệ)
+            if (callStmt.getMoreResults()) {
+                ResultSet rs = callStmt.getResultSet();
+                System.out.println("Kết quả tìm kiếm (Trang " + pageNumber + "/" + totalPages + "):");
+                System.out.println("--------------------------------------------------");
+                while (rs.next()) {
+                    System.out.println("ID: " + rs.getInt("id") +
+                            ", Tên: " + rs.getString("name") +
+                            ", Trạng thái: " + rs.getString("status"));
+                    count++;
+                }
+                rs.close();
+                if (count == 0) {
+                    System.out.println("Không tìm thấy công nghệ nào trên trang này.");
+                }
             }
+
             return totalPages;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi tìm kiếm công nghệ: " + e.getMessage());

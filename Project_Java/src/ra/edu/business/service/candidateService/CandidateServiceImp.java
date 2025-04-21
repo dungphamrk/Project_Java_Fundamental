@@ -37,4 +37,34 @@ public class CandidateServiceImp implements CandidateService {
     public int changePassword(int userId, String oldPassword, String newPassword) {
         return candidateDao.changePassword(userId, oldPassword, newPassword);
     }
+
+    @Override
+    public boolean lockUnlockAccount(int candidateId) {
+        return candidateDao.lockUnlockAccount(candidateId, false); // lockStatus không được sử dụng
+    }
+
+    @Override
+    public boolean searchByName(String name) {
+        return candidateDao.searchByName(name);
+    }
+
+    @Override
+    public boolean filterByExperience(int experience) {
+        return candidateDao.filterByExperience(experience);
+    }
+
+    @Override
+    public boolean filterByAge(int age) {
+        return candidateDao.filterByAge(age);
+    }
+
+    @Override
+    public boolean filterByGender(String gender) {
+        return candidateDao.filterByGender(gender);
+    }
+
+    @Override
+    public boolean filterByTechnology(String technology) {
+        return candidateDao.filterByTechnology(technology);
+    }
 }

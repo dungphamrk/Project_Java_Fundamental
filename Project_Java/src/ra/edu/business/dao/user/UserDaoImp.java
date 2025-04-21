@@ -16,7 +16,7 @@ public class UserDaoImp implements UserDao {
 
         try {
             conn = ConnectionDB.openConnection();
-            callStmt = conn.prepareCall("{call sp_Login(?,?,?,?)}");
+            callStmt = conn.prepareCall("{call sp_Login(?,?,?,?,?)}");
             callStmt.setString(1, username);
             callStmt.setString(2, password);
             callStmt.registerOutParameter(3, Types.INTEGER); // userId

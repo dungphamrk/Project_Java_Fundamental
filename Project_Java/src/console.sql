@@ -28,8 +28,8 @@ CREATE TABLE candidate
 -- Tạo bảng technology
 CREATE TABLE technology
 (
-    id   INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
+    id     INT AUTO_INCREMENT PRIMARY KEY,
+    name   VARCHAR(100) NOT NULL UNIQUE,
     status ENUM('active','inactive')
 );
 
@@ -89,8 +89,8 @@ CREATE TABLE recruitment_position_technology
 );
 
 -- Khởi tạo admin
-INSERT INTO user (username, password, role, status)
-VALUES ('admin', SHA2('admin', 256), 'admin', 'active');
+INSERT INTO user (id, username, password, role, status)
+VALUES (1, 'admin', SHA2('admin', 256), 'admin', 'active');
 
 -- Dữ liệu mẫu cho user và candidate
 INSERT INTO user (username, password, role, status)
@@ -107,7 +107,9 @@ VALUES (LAST_INSERT_ID(),
         '1995-05-15');
 
 DELIMITER $$
-CREATE PROCEDURE  sp_CheckTechnologyNameExists(
+
+-- Stored Procedure: Kiểm tra tên công nghệ có tồn tại
+CREATE PROCEDURE sp_CheckTechnologyNameExists(
     IN in_name VARCHAR(100),
     OUT is_exists BOOLEAN
 )
@@ -115,8 +117,9 @@ BEGIN
 SELECT EXISTS(
     SELECT 1 FROM technology WHERE name = in_name
 ) INTO is_exists;
-END;
+END $$
 
+-- Stored Procedure: Kiểm tra username có tồn tại
 CREATE PROCEDURE sp_CheckUsernameExists(
     IN in_username VARCHAR(100),
     OUT is_exists BOOLEAN
@@ -125,8 +128,9 @@ BEGIN
 SELECT EXISTS(
     SELECT 1 FROM user WHERE username = in_username
 ) INTO is_exists;
-END;
+END $$
 
+-- Stored Procedure: Kiểm tra email ứng viên có tồn tại
 CREATE PROCEDURE sp_CheckCandidateEmailExists(
     IN in_email VARCHAR(100),
     OUT is_exists BOOLEAN
@@ -135,8 +139,9 @@ BEGIN
 SELECT EXISTS(
     SELECT 1 FROM candidate WHERE email = in_email
 ) INTO is_exists;
-END;
+END $$
 
+-- Stored Procedure: Kiểm tra số điện thoại ứng viên có tồn tại
 CREATE PROCEDURE sp_CheckCandidatePhoneExists(
     IN in_phone VARCHAR(20),
     OUT is_exists BOOLEAN
@@ -145,12 +150,14 @@ BEGIN
 SELECT EXISTS(
     SELECT 1 FROM candidate WHERE phone = in_phone
 ) INTO is_exists;
-END;
+END $$
 
+-- Stored Procedure: Đăng ký người dùng
 CREATE PROCEDURE sp_RegisterUser(
     IN p_username VARCHAR(100),
     IN p_password VARCHAR(255),
-    OUT p_return_code INT
+    OUT p_return_code INT,
+    OUT p_userId INT
 )
 BEGIN
     DECLARE is_exists BOOLEAN;
@@ -164,11 +171,13 @@ ELSE
         VALUES (p_username, SHA2(p_password, 256), 'candidate', 'active');
 
         SET p_return_code = 0; -- Thành công
+        SET p_userId = LAST_INSERT_ID();
 END IF;
-END;
+END $$
 
+-- Stored Procedure: Đăng ký ứng viên
 CREATE PROCEDURE sp_RegisterCandidate(
-    IN p_user_id INT,
+    IN p_id INT,
     IN p_name VARCHAR(100),
     IN p_email VARCHAR(100),
     IN p_phone VARCHAR(20),
@@ -191,11 +200,12 @@ IF email_exists THEN
         SET p_return_code = 2; -- Số điện thoại đã tồn tại
 ELSE
         INSERT INTO candidate (id, name, email, phone, experience, gender, description, dob)
-        VALUES (p_user_id, p_name, p_email, p_phone, p_experience, p_gender, p_description, p_dob);
+        VALUES (p_id, p_name, p_email, p_phone, p_experience, p_gender, p_description, p_dob);
         SET p_return_code = 0; -- Thành công
 END IF;
-END;
+END $$
 
+-- Stored Procedure: Đăng nhập
 CREATE PROCEDURE sp_Login(
     IN in_username VARCHAR(100),
     IN in_password VARCHAR(255),
@@ -208,7 +218,6 @@ BEGIN
     SET out_user_role = NULL;
     SET out_return_code = 1;
 
-    -- Kiểm tra trong bảng user
 SELECT id, role
 INTO out_user_id, out_user_role
 FROM user
@@ -224,15 +233,6 @@ ELSE
 END IF;
 END $$
 
-
--- Stored Procedure: Lấy danh sách tất cả ứng viên
-CREATE PROCEDURE sp_FindAllCandidates()
-BEGIN
-SELECT c.id, c.name, c.email, u.role
-FROM candidate c
-         JOIN user u ON c.id = u.id
-WHERE u.status = 'active';
-END $$
 
 -- Stored Procedure: Cập nhật thông tin ứng viên
 CREATE PROCEDURE sp_UpdateCandidate(
@@ -281,15 +281,32 @@ ELSE
 END IF;
 END $$
 
-
-CREATE PROCEDURE sp_FindAllTechnologies()
+-- Stored Procedure: Lấy danh sách tất cả công nghệ
+CREATE PROCEDURE sp_FindAllTechnologies(
+    IN pageNumber INT,
+    IN pageSize INT,
+    OUT totalPages INT
+)
 BEGIN
-SELECT id, name, status
+    DECLARE offsetValue INT;
+    DECLARE totalRecords INT;
+
+    SET offsetValue = (pageNumber - 1) * pageSize;
+
+SELECT COUNT(*) INTO totalRecords
 FROM technology
 WHERE status = 'active';
+
+SET totalPages = CEIL(totalRecords / pageSize);
+
+SELECT id, name, status
+FROM technology
+WHERE status = 'active'
+    LIMIT pageSize
+OFFSET offsetValue;
 END $$
 
--- Procedure to create a new technology
+-- Stored Procedure: Tạo công nghệ mới
 CREATE PROCEDURE sp_CreateTechnology(
     IN p_name VARCHAR(100),
     IN p_status ENUM('active', 'inactive'),
@@ -304,7 +321,6 @@ END;
 
 START TRANSACTION;
 
--- Check if name already exists
 IF EXISTS (SELECT 1 FROM technology WHERE name = p_name) THEN
         SET p_return_code = 0; -- Name already exists
 ROLLBACK;
@@ -316,7 +332,7 @@ COMMIT;
 END IF;
 END $$
 
--- Procedure to update an existing technology
+-- Stored Procedure: Cập nhật công nghệ
 CREATE PROCEDURE sp_UpdateTechnology(
     IN p_id INT,
     IN p_name VARCHAR(100),
@@ -332,11 +348,9 @@ END;
 
 START TRANSACTION;
 
--- Check if technology exists
 IF NOT EXISTS (SELECT 1 FROM technology WHERE id = p_id) THEN
         SET p_return_code = 0; -- Technology not found
 ROLLBACK;
--- Check if name is unique (excluding current ID)
 ELSEIF EXISTS (SELECT 1 FROM technology WHERE name = p_name AND id != p_id) THEN
         SET p_return_code = 0; -- Name already exists
 ROLLBACK;
@@ -349,7 +363,7 @@ COMMIT;
 END IF;
 END $$
 
--- Procedure to "delete" a technology by setting status to inactive
+-- Stored Procedure: Xóa công nghệ (xóa mềm)
 CREATE PROCEDURE sp_DeleteTechnology(
     IN p_id INT,
     OUT p_return_code INT
@@ -363,7 +377,6 @@ END;
 
 START TRANSACTION;
 
--- Check if technology exists
 IF NOT EXISTS (SELECT 1 FROM technology WHERE id = p_id) THEN
         SET p_return_code = 0; -- Technology not found
 ROLLBACK;
@@ -375,4 +388,284 @@ SET p_return_code = 1; -- Success
 COMMIT;
 END IF;
 END $$
+
+-- Stored Procedure: Tìm kiếm công nghệ theo tên
+CREATE PROCEDURE sp_SearchTechnologies(
+    IN p_keyword VARCHAR(255),
+    IN p_pageNumber INT,
+    IN p_pageSize INT
+)
+BEGIN
+    DECLARE offsetValue INT;
+    DECLARE totalRecords INT;
+    DECLARE totalPages INT;
+
+    SET offsetValue = (p_pageNumber - 1) * p_pageSize;
+
+    -- Tính tổng số bản ghi
+SELECT COUNT(*) INTO totalRecords
+FROM technology
+WHERE status = 'active' AND name LIKE p_keyword;
+
+-- Tính tổng số trang
+SET totalPages = CEIL(totalRecords / p_pageSize);
+
+    -- Trả về totalPages dưới dạng ResultSet đầu tiên
+SELECT totalPages AS totalPages;
+
+-- Trả về danh sách công nghệ dưới dạng ResultSet thứ hai
+SELECT id, name, status
+FROM technology
+WHERE status = 'active' AND name LIKE p_keyword
+    LIMIT p_pageSize
+OFFSET offsetValue;
+END $$
+
+-- Stored Procedure: Tìm kiếm công nghệ theo ID
+CREATE PROCEDURE sp_FindTechnologyById(
+    IN p_id INT
+)
+BEGIN
+    DECLARE found INT;
+SELECT COUNT(*) INTO found
+FROM technology
+WHERE id = p_id AND status = 'active';
+
+SELECT found AS found;
+
+IF found > 0 THEN
+SELECT id, name, status
+FROM technology
+WHERE id = p_id AND status = 'active';
+END IF;
+END $$
+
+CREATE PROCEDURE sp_UpdatePassword(
+    IN p_user_id INT,
+    IN p_old_password VARCHAR(255),
+    IN p_new_password VARCHAR(255),
+    OUT p_return_code INT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM user
+        WHERE id = p_user_id
+          AND password = SHA2(p_old_password, 256)
+          AND status = 'active'
+    ) THEN
+        SET p_return_code = 2; -- Mật khẩu cũ không đúng hoặc tài khoản không tồn tại
+ELSE
+UPDATE user
+SET password = SHA2(p_new_password, 256)
+WHERE id = p_user_id;
+SET p_return_code = 1; -- Success
+END IF;
+END $$
+
+-- Stored Procedure: Lấy danh sách tất cả ứng viên (hỗ trợ phân trang)
+CREATE PROCEDURE sp_FindAllCandidates(
+    IN p_pageNumber INT,
+    IN p_pageSize INT
+)
+BEGIN
+    DECLARE offsetValue INT;
+    SET offsetValue = (p_pageNumber - 1) * p_pageSize;
+
+SELECT c.id, c.name, c.email, u.role, u.status AS user_status
+FROM candidate c
+         JOIN user u ON c.id = u.id
+WHERE u.status = 'active'
+ORDER BY c.id
+    LIMIT p_pageSize OFFSET offsetValue;
+END $$
+
+-- Stored Procedure: Khóa/mở khóa tài khoản ứng viên
+CREATE PROCEDURE sp_LockUnlockCandidate(
+    IN p_candidateId INT,
+    IN p_lockStatus ENUM('active', 'inactive'),
+    OUT p_return_code INT
+        )
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+BEGIN
+            SET p_return_code = 1; -- Lỗi
+ROLLBACK;
+END;
+
+START TRANSACTION;
+
+IF EXISTS (SELECT 1 FROM user WHERE id = p_candidateId AND role = 'candidate') THEN
+UPDATE user
+SET status = p_lockStatus
+WHERE id = p_candidateId;
+SET p_return_code = 0; -- Thành công
+COMMIT;
+ELSE
+        SET p_return_code = 2; -- Không tìm thấy ứng viên
+ROLLBACK;
+END IF;
+END $$
+
+-- Stored Procedure: Tìm kiếm ứng viên theo tên
+CREATE PROCEDURE sp_SearchCandidateByName(
+    IN p_name VARCHAR(100)
+)
+BEGIN
+SELECT c.id, c.name, c.email, u.role
+FROM candidate c
+         JOIN user u ON c.id = u.id
+WHERE c.name LIKE p_name AND u.status = 'active';
+END $$
+
+-- Stored Procedure: Lọc ứng viên theo kinh nghiệm
+CREATE PROCEDURE sp_FilterCandidateByExperience(
+    IN p_experience INT
+)
+BEGIN
+SELECT c.id, c.name, c.email, c.experience
+FROM candidate c
+         JOIN user u ON c.id = u.id
+WHERE c.experience >= p_experience AND u.status = 'active';
+END $$
+
+-- Stored Procedure: Lọc ứng viên theo tuổi
+CREATE PROCEDURE sp_FilterCandidateByAge(
+    IN p_age INT
+)
+BEGIN
+SELECT c.id, c.name, c.email, c.dob
+FROM candidate c
+         JOIN user u ON c.id = u.id
+WHERE TIMESTAMPDIFF(YEAR, c.dob, CURDATE()) >= p_age AND u.status = 'active';
+END $$
+
+-- Stored Procedure: Lọc ứng viên theo giới tính
+CREATE PROCEDURE sp_FilterCandidateByGender(
+    IN p_gender ENUM('male', 'female', 'other')
+)
+BEGIN
+SELECT c.id, c.name, c.email, c.gender
+FROM candidate c
+         JOIN user u ON c.id = u.id
+WHERE c.gender = p_gender AND u.status = 'active';
+END $$
+
+-- Stored Procedure: Lọc ứng viên theo công nghệ
+CREATE PROCEDURE sp_FilterCandidateByTechnology(
+    IN p_technology VARCHAR(100)
+)
+BEGIN
+SELECT c.id, c.name, c.email, t.name AS technology_name
+FROM candidate c
+         JOIN user u ON c.id = u.id
+         JOIN candidate_technology ct ON c.id = ct.candidateId
+         JOIN technology t ON ct.technologyId = t.id
+WHERE t.name LIKE p_technology AND u.status = 'active' AND t.status = 'active';
+END $$
+
+DELIMITER $$
+
+-- Stored Procedure: Lấy danh sách vị trí tuyển dụng
+CREATE PROCEDURE sp_FindAllRecruitmentPositions(
+    IN p_pageNumber INT,
+    IN p_pageSize INT
+)
+BEGIN
+    DECLARE offsetValue INT;
+    SET offsetValue = (p_pageNumber - 1) * p_pageSize;
+
+SELECT id, name, description, minSalary, maxSalary, minExperience, createdDate, expiredDate
+FROM recruitment_position
+ORDER BY id
+    LIMIT p_pageSize OFFSET offsetValue;
+END $$
+
+-- Stored Procedure: Tạo vị trí tuyển dụng mới
+CREATE PROCEDURE sp_CreateRecruitmentPosition(
+    IN p_name VARCHAR(100),
+    IN p_description TEXT,
+    IN p_minSalary DECIMAL(10,2),
+    IN p_maxSalary DECIMAL(10,2),
+    IN p_minExperience INT,
+    IN p_expiredDate DATETIME,
+    OUT p_return_code INT
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+BEGIN
+            SET p_return_code = 1; -- Lỗi
+ROLLBACK;
+END;
+
+START TRANSACTION;
+
+INSERT INTO recruitment_position (name, description, minSalary, maxSalary, minExperience, expiredDate)
+VALUES (p_name, p_description, p_minSalary, p_maxSalary, p_minExperience, p_expiredDate);
+
+SET p_return_code = 0; -- Thành công
+COMMIT;
+END $$
+
+-- Stored Procedure: Cập nhật vị trí tuyển dụng
+CREATE PROCEDURE sp_UpdateRecruitmentPosition(
+    IN p_id INT,
+    IN p_name VARCHAR(100),
+    IN p_description TEXT,
+    IN p_minSalary DECIMAL(10,2),
+    IN p_maxSalary DECIMAL(10,2),
+    IN p_minExperience INT,
+    IN p_expiredDate DATETIME,
+    OUT p_return_code INT
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+BEGIN
+            SET p_return_code = 1; -- Lỗi
+ROLLBACK;
+END;
+
+START TRANSACTION;
+
+IF EXISTS (SELECT 1 FROM recruitment_position WHERE id = p_id) THEN
+UPDATE recruitment_position
+SET name = p_name,
+    description = p_description,
+    minSalary = p_minSalary,
+    maxSalary = p_maxSalary,
+    minExperience = p_minExperience,
+    expiredDate = p_expiredDate
+WHERE id = p_id;
+SET p_return_code = 0; -- Thành công
+COMMIT;
+ELSE
+        SET p_return_code = 2; -- Không tìm thấy vị trí
+ROLLBACK;
+END IF;
+END $$
+
+-- Stored Procedure: Xóa vị trí tuyển dụng
+CREATE PROCEDURE sp_DeleteRecruitmentPosition(
+    IN p_id INT,
+    OUT p_return_code INT
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+BEGIN
+            SET p_return_code = 1; -- Lỗi
+ROLLBACK;
+END;
+
+START TRANSACTION;
+
+IF EXISTS (SELECT 1 FROM recruitment_position WHERE id = p_id) THEN
+DELETE FROM recruitment_position WHERE id = p_id;
+SET p_return_code = 0; -- Thành công
+COMMIT;
+ELSE
+        SET p_return_code = 2; -- Không tìm thấy vị trí
+ROLLBACK;
+END IF;
+END $$
+
+
 DELIMITER ;

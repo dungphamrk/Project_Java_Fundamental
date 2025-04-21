@@ -10,9 +10,7 @@ import static ra.edu.presentation.ServiceProvider.userService;
 
 public class MainUI {
 
-
     public static void displayMainMenu(Scanner scanner) {
-        // Kiểm tra trạng thái đăng nhập
         String loggedInRole = userService.isLoggedIn();
         if (loggedInRole != null) {
             if (loggedInRole.equalsIgnoreCase("CANDIDATE")) {

@@ -32,7 +32,8 @@ public class CandidateUI {
                     case 5:
                         userService.logout();
                         System.out.println("Đã đăng xuất!");
-                        return; // Quay lại menu chính
+                        MainUI.displayMainMenu(scanner);
+                        return;
                     default:
                         System.err.println("Vui lòng chọn từ 1-5");
                 }
