@@ -5,7 +5,6 @@ import ra.edu.business.model.user.User;
 
 import java.io.*;
 import java.sql.*;
-import java.util.Scanner;
 
 public class UserDaoImp implements UserDao {
     @Override
@@ -112,11 +111,6 @@ public class UserDaoImp implements UserDao {
     }
 
     @Override
-    public int findAll(int pageNumber, int pageSize) {
-        return 0;
-    }
-
-    @Override
     public int save(User user) {
         Connection conn = null;
         CallableStatement callStmt = null;
@@ -155,15 +149,5 @@ public class UserDaoImp implements UserDao {
             ConnectionDB.closeConnection(conn, callStmt);
         }
         return returnCode;
-    }
-
-    @Override
-    public int update(Scanner scanner) {
-        return 0;
-    }
-
-    @Override
-    public int delete(Scanner scanner) {
-        return 0;
     }
 }

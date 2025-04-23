@@ -1,11 +1,16 @@
-package ra.edu.presentation;
+package ra.edu.presentation.admin;
+
+import ra.edu.presentation.ApplicationUI;
+import ra.edu.presentation.MainUI;
+import ra.edu.presentation.RecruitmentPositionUI;
+
 import java.util.Scanner;
 import static ra.edu.presentation.ServiceProvider.userService;
 
 public class AdminUI {
     public static void displayAdminMenu(Scanner scanner) {
         do {
-            System.out.println("***************ADMIN MENU**************");
+            System.out.println("***************MENU ADMIN**************");
             System.out.println("1. Quản lý công nghệ");
             System.out.println("2. Quản lý ứng viên");
             System.out.println("3. Quản lý vị trí tuyển dụng");
@@ -22,7 +27,7 @@ public class AdminUI {
                         CandidateManagementUI.displayCandidateManagementMenu(scanner);
                         break;
                     case 3:
-                        RecruitmentPositionUI.displayRecruitmentPositionMenu(scanner);
+                        RecruitmentPositionUI.displayAdminRecruitmentPositionMenu(scanner);
                         break;
                     case 4:
                         ApplicationUI.displayAdminApplicationMenu(scanner);
@@ -35,7 +40,7 @@ public class AdminUI {
                         System.err.println("Vui lòng chọn từ 1-5");
                 }
             } catch (NumberFormatException e) {
-                System.err.println("Vui lòng nhập số từ 1-5");
+                System.err.println("Vui lòng nhập số từ 1-4");
             }
         } while (true);
     }

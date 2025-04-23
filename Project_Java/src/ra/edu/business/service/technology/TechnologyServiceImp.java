@@ -2,10 +2,11 @@ package ra.edu.business.service.technology;
 
 import ra.edu.business.dao.technology.TechnologyDao;
 import ra.edu.business.dao.technology.TechnologyDaoImp;
+import ra.edu.business.model.recruitmentPosition.RecruitmentPosition;
+import ra.edu.business.model.technology.Status;
 import ra.edu.business.model.technology.Technology;
 
 import java.util.List;
-import java.util.Scanner;
 
 public class TechnologyServiceImp implements TechnologyService {
     private final TechnologyDao technologyDao;
@@ -15,47 +16,108 @@ public class TechnologyServiceImp implements TechnologyService {
     }
 
     @Override
-    public int findAll(int pageNumber, int pageSize) {
+    public List<Technology> findAll(int pageNumber, int pageSize) {
+        if (pageNumber < 1 || pageSize < 1) {
+            return List.of();
+        }
         return technologyDao.findAll(pageNumber, pageSize);
     }
 
     @Override
     public int save(Technology technology) {
+        if (technology.getName() == null || technology.getName().trim().isEmpty()) {
+            return 1; // Mã lỗi: tên không hợp lệ
+        }
+        if (technology.getStatus() == null) {
+            return 2; // Mã lỗi: trạng thái không hợp lệ
+        }
         return technologyDao.save(technology);
     }
 
     @Override
-    public int update(Scanner scanner) {
-        return technologyDao.update(scanner);
+    public int updateField(Integer id, String fieldName, Object newValue) {
+        if (id <= 0) {
+            return 1; // Mã lỗi: ID không hợp lệ
+        }
+        if (newValue == null || newValue.toString().trim().isEmpty()) {
+            return 2; // Mã lỗi: giá trị rỗng
+        }
+        if (!fieldName.equals("name") && !fieldName.equals("status")) {
+            return 3; // Mã lỗi: trường không hợp lệ
+        }
+        if (fieldName.equals("status")) {
+            try {
+                Status.valueOf(newValue.toString().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return 4; // Mã lỗi: trạng thái không hợp lệ
+            }
+        }
+        return technologyDao.updateField(id, fieldName, newValue);
     }
 
     @Override
-    public int delete(Scanner scanner) {
-        return technologyDao.delete(scanner);
+    public List<Technology> findAllTechnologiesByCandidates(int pageNumber, int pageSize) {
+        return technologyDao.findAllTechnologiesByCandidate( pageNumber, pageSize);
     }
 
     @Override
-    public Technology findById(int id) {
+    public int delete(Integer id) {
+        if (id <= 0) {
+            return 1; // Mã lỗi: ID không hợp lệ
+        }
+        Technology technology = technologyDao.findById(id);
+        if (technology == null) {
+            return 2;
+        }
+        return technologyDao.delete(id);
+    }
+
+    @Override
+    public Technology findById(Integer id) {
+        if (id <= 0) {
+            return null; // ID không hợp lệ
+        }
         return technologyDao.findById(id);
     }
 
     @Override
-    public int searchByName(String keyword, int pageNumber, int pageSize) {
+    public List<Technology> searchByName(String keyword, int pageNumber, int pageSize) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return List.of(); // Trả về danh sách rỗng nếu từ khóa không hợp lệ
+        }
+        if (pageNumber < 1 || pageSize < 1) {
+            return List.of(); // Trả về danh sách rỗng nếu phân trang không hợp lệ
+        }
         return technologyDao.searchByName(keyword, pageNumber, pageSize);
     }
 
     @Override
-    public List<Technology> getCandidateTechnologies(int candidateId) {
+    public List<Technology> getCandidateTechnologies(Integer candidateId) {
+        if (candidateId <= 0) {
+            return List.of(); // ID không hợp lệ
+        }
         return technologyDao.getCandidateTechnologies(candidateId);
     }
 
     @Override
-    public int addCandidateTechnology(int candidateId, int technologyId) {
+    public int addCandidateTechnology(Integer candidateId, Integer technologyId) {
+        if (candidateId <= 0 || technologyId <= 0) {
+            return 1; // Mã lỗi: ID không hợp lệ
+        }
         return technologyDao.addCandidateTechnology(candidateId, technologyId);
     }
 
     @Override
-    public int removeCandidateTechnology(int candidateId, int technologyId) {
+    public int removeCandidateTechnology(Integer candidateId, Integer technologyId) {
+        if (candidateId <= 0 || technologyId <= 0) {
+            return 1; // Mã lỗi: ID không hợp lệ
+        }
         return technologyDao.removeCandidateTechnology(candidateId, technologyId);
     }
+
+    @Override
+    public List<Technology> findAllTechnologiesByAdmin(int pageNumber, int pageSize) {
+        return findAll(pageNumber, pageSize);
+    }
+
 }

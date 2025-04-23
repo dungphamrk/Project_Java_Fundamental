@@ -1,10 +1,13 @@
 package ra.edu.business.service;
 
-import java.util.Scanner;
+import java.util.List;
 
-public interface AppService<T> {
-    int findAll(int pageNumber, int pageSize);
+public interface AppService<T, ID> {
+    List<T> findAll(int pageNumber, int pageSize);
+
     int save(T obj);
-    int update(Scanner scanner);
-    int delete(Scanner scanner);
+
+    int updateField(ID id, String fieldName, Object newValue);
+
+    int delete(ID id);
 }

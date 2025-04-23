@@ -1,4 +1,4 @@
-package ra.edu.presentation;
+package ra.edu.presentation.candidate;
 
 import ra.edu.business.model.technology.Technology;
 import ra.edu.business.service.technology.TechnologyService;
@@ -7,8 +7,9 @@ import ra.edu.business.service.technology.TechnologyServiceImp;
 import java.util.List;
 import java.util.Scanner;
 
+import static ra.edu.presentation.ServiceProvider.technologyService;
+
 public class CandidateTechnologyUI {
-    private static final TechnologyService technologyService = new TechnologyServiceImp();
 
     public static void displayMenu(Scanner scanner, int candidateId) {
         do {
@@ -57,18 +58,36 @@ public class CandidateTechnologyUI {
     }
 
     private static void addCandidateTechnology(Scanner scanner, int candidateId) {
-        System.out.print("Nhập từ khóa để tìm kiếm công nghệ: ");
-        String keyword = scanner.nextLine();
-        int pageNumber = 1;
-        int pageSize = 5;
-        int totalPages = technologyService.searchByName(keyword, pageNumber, pageSize);
-        if (totalPages == 0) {
-            System.err.println("Không tìm thấy công nghệ nào khớp với từ khóa.");
+         int pageNumber = 1;
+        int pageSize = Integer.MAX_VALUE; // Lấy tất cả công nghệ
+        List<Technology> technologies = technologyService.findAllTechnologiesByCandidates(pageNumber, pageSize);
+
+        if (technologies == null || technologies.isEmpty()) {
+            System.err.println("Không có công nghệ nào đang hoạt động.");
             return;
         }
-        System.out.print("Nhập ID công nghệ muốn thêm: ");
+
+        // Hiển thị danh sách công nghệ
+        System.out.println("Danh sách công nghệ đang hoạt động:");
+        System.out.println("--------------------------------------------------");
+        for (Technology tech : technologies) {
+            System.out.println("ID: " + tech.getId() +
+                    ", Tên: " + tech.getName() +
+                    ", Trạng thái: " + tech.getStatus());
+        }
+
+        System.out.print("Nhập ID công nghệ muốn thêm (từ danh sách trên): ");
         try {
             int technologyId = Integer.parseInt(scanner.nextLine());
+
+            // Kiểm tra xem ID công nghệ có tồn tại và đang active
+            Technology technology = technologyService.findById(technologyId);
+            if (technology == null || !technology.getStatus().name().equalsIgnoreCase("active")) {
+                System.err.println("Công nghệ không tồn tại hoặc không hoạt động!");
+                return;
+            }
+
+            // Thêm công nghệ cho ứng viên
             int result = technologyService.addCandidateTechnology(candidateId, technologyId);
             if (result == 1) {
                 System.out.println("Thêm công nghệ thành công!");
@@ -85,7 +104,6 @@ public class CandidateTechnologyUI {
             System.err.println("Vui lòng nhập ID là một số!");
         }
     }
-
     private static void removeCandidateTechnology(Scanner scanner, int candidateId) {
         viewCandidateTechnologies(candidateId);
         System.out.print("Nhập ID công nghệ muốn xóa: ");

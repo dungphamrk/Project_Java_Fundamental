@@ -1,11 +1,14 @@
 package ra.edu.business.dao;
 
-import java.util.Scanner;
+import java.util.List;
 
-public interface AppDao<T> {
-    public int findAll(int pageNumber, int pageSize) ;
-    public int save(T obj);
-    public int update(Scanner scanner);
-    public int delete(Scanner scanner);
 
+public interface AppDao<T, ID> {
+    List<T> findAll(int pageNumber, int pageSize);
+
+    int save(T obj);
+
+    int updateField(ID id, String fieldName, Object newValue);
+
+    int delete(ID id);
 }

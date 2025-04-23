@@ -1,10 +1,12 @@
-package ra.edu.presentation;
+package ra.edu.presentation.admin;
 
+import ra.edu.business.model.technology.Status;
 import ra.edu.business.model.technology.Technology;
 import ra.edu.business.service.technology.TechnologyService;
 import ra.edu.business.service.technology.TechnologyServiceImp;
 import ra.edu.validate.Validator;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class TechnologyUI {
@@ -24,35 +26,23 @@ public class TechnologyUI {
                 int choice = Validator.validateChoice(scanner);
                 switch (choice) {
                     case 1:
-                        int pageNumber = 1; // Mặc định trang đầu tiên
-                        int pageSize = 5;  // Mặc định 5 phần tử trên trang
-                        displayTechnologyList(scanner, pageNumber, pageSize);
+                        displayTechnologyList(scanner, 1, 5);
                         break;
                     case 2:
                         Technology newTechnology = new Technology();
                         newTechnology.inputData(scanner);
                         int saveResult = technologyService.save(newTechnology);
-                        if (saveResult > 0) {
+                        if (saveResult == 1) {
                             System.out.println("Thêm công nghệ thành công!");
                         } else {
-                            System.err.println("Thêm công nghệ thất bại.");
+                            System.err.println("Thêm công nghệ thất bại: " + getErrorMessage(saveResult));
                         }
                         break;
                     case 3:
-                        int updateResult = technologyService.update(scanner);
-                        if (updateResult > 0) {
-                            System.out.println("Cập nhật công nghệ thành công!");
-                        } else {
-                            System.err.println("Cập nhật công nghệ thất bại.");
-                        }
+                        updateTechnology(scanner);
                         break;
                     case 4:
-                        int deleteResult = technologyService.delete(scanner);
-                        if (deleteResult > 0) {
-                            System.out.println("Xóa công nghệ thành công!");
-                        } else {
-                            System.err.println("Xóa công nghệ thất bại.");
-                        }
+                        deleteTechnology(scanner);
                         break;
                     case 5:
                         searchTechnologyByName(scanner);
@@ -73,10 +63,17 @@ public class TechnologyUI {
 
     private static void displayTechnologyList(Scanner scanner, int pageNumber, int pageSize) {
         do {
-            int totalPages = technologyService.findAll(pageNumber, pageSize);
-            if (totalPages == 0) {
-                System.err.println("Không có trang nào để hiển thị.");
+            List<Technology> technologies = technologyService.findAll(pageNumber, pageSize);
+            if (technologies.isEmpty()) {
+                System.out.println("Không có công nghệ nào để hiển thị.");
                 return;
+            }
+            System.out.println("Danh sách công nghệ (Trang " + pageNumber + "):");
+            System.out.println("--------------------------------------------------");
+            for (Technology technology : technologies) {
+                System.out.println("ID: " + technology.getId() +
+                        ", Tên: " + technology.getName() +
+                        ", Trạng thái: " + technology.getStatus());
             }
             System.out.println("***************PAGINATION MENU**************");
             System.out.println("1. Nhập số trang bạn muốn chuyển sang");
@@ -89,11 +86,12 @@ public class TechnologyUI {
                 switch (paginationChoice) {
                     case 1:
                         System.out.print("Nhập số trang: ");
-                        pageNumber = Integer.parseInt(scanner.nextLine());
-                        if (pageNumber < 1 || pageNumber > totalPages) {
-                            System.err.println("Số trang phải từ 1 đến " + totalPages + ".");
-                            pageNumber = 1;
+                        int newPage = Integer.parseInt(scanner.nextLine());
+                        if (newPage < 1) {
+                            System.err.println("Số trang phải lớn hơn 0.");
+                            break;
                         }
+                        pageNumber = newPage;
                         break;
                     case 2:
                         if (pageNumber > 1) {
@@ -103,7 +101,7 @@ public class TechnologyUI {
                         }
                         break;
                     case 3:
-                        if (pageNumber < totalPages) {
+                        if (!technologies.isEmpty()) {
                             pageNumber++;
                         } else {
                             System.err.println("Đang ở trang cuối cùng!");
@@ -114,12 +112,12 @@ public class TechnologyUI {
                         pageSize = Integer.parseInt(scanner.nextLine());
                         if (pageSize < 1) {
                             System.err.println("Số phần tử phải lớn hơn 0.");
-                            pageSize = 5; // Quay lại mặc định nếu không hợp lệ
+                            pageSize = 5;
                         }
-                        pageNumber = 1; // Reset về trang 1 khi thay đổi pageSize
+                        pageNumber = 1;
                         break;
                     case 5:
-                        return; // Quay lại menu chính
+                        return;
                     default:
                         System.err.println("Vui lòng chọn từ 1-5");
                 }
@@ -129,18 +127,85 @@ public class TechnologyUI {
         } while (true);
     }
 
+    private static void updateTechnology(Scanner scanner) {
+        System.out.print("Nhập ID công nghệ cần sửa: ");
+        try {
+            int id = Integer.parseInt(scanner.nextLine());
+            Technology technology = technologyService.findById(id);
+            if (technology == null) {
+                System.err.println("Không tìm thấy công nghệ với ID: " + id);
+                return;
+            }
+            System.out.println("Thông tin công nghệ hiện tại:");
+            System.out.println("1. Tên: " + technology.getName());
+            System.out.println("2. Trạng thái: " + technology.getStatus());
+            System.out.print("Chọn trường cần cập nhật (1-2, 0 để thoát): ");
+            int fieldChoice = Integer.parseInt(scanner.nextLine());
+            if (fieldChoice == 0) {
+                return;
+            }
+            String fieldName;
+            Object newValue;
+            switch (fieldChoice) {
+                case 1:
+                    fieldName = "name";
+                    System.out.print("Nhập tên mới: ");
+                    newValue = scanner.nextLine();
+                    break;
+                case 2:
+                    fieldName = "status";
+                    System.out.print("Nhập trạng thái mới (ACTIVE/INACTIVE): ");
+                    newValue = scanner.nextLine().toUpperCase();
+                    break;
+                default:
+                    System.err.println("Lựa chọn không hợp lệ!");
+                    return;
+            }
+            int updateResult = technologyService.updateField(id, fieldName, newValue);
+            if (updateResult == 0) {
+                System.out.println("Cập nhật công nghệ thành công!");
+            } else {
+                System.err.println("Cập nhật công nghệ thất bại: " + getErrorMessage(updateResult));
+            }
+        } catch (NumberFormatException e) {
+            System.err.println("Vui lòng nhập số hợp lệ");
+        }
+    }
+
+    private static void deleteTechnology(Scanner scanner) {
+        System.out.print("Nhập ID công nghệ cần xóa: ");
+        try {
+            int id = Integer.parseInt(scanner.nextLine());
+            int deleteResult = technologyService.delete(id);
+            if (deleteResult == 1) {
+                System.out.println("Xóa công nghệ thành công!");
+            } else {
+                System.err.println("Xóa công nghệ thất bại: " + getErrorMessage(deleteResult));
+            }
+        } catch (NumberFormatException e) {
+            System.err.println("Vui lòng nhập ID là số hợp lệ");
+        }
+    }
+
     private static void searchTechnologyByName(Scanner scanner) {
         System.out.print("Nhập tên công nghệ cần tìm: ");
         String keyword = scanner.nextLine();
-        int pageNumber = 1; // Mặc định trang đầu tiên
-        int pageSize = 5;  // Mặc định 5 phần tử trên trang
+        int pageNumber = 1;
+        int pageSize = 5;
         do {
-            int totalPages = technologyService.searchByName(keyword, pageNumber, pageSize);
-            if (totalPages == 0) {
-                System.err.println("Không tìm thấy công nghệ nào khớp với từ khóa.");
+            List<Technology> technologies = technologyService.searchByName(keyword, pageNumber, pageSize);
+            if (technologies.isEmpty()) {
+                System.out.println("Không tìm thấy công nghệ nào khớp với từ khóa: " + keyword);
                 return;
             }
-            System.out.println("***************SEARCH RESULTS (Trang " + pageNumber + "/" + totalPages + ")**************");
+            System.out.println("Kết quả tìm kiếm (Trang " + pageNumber + "):");
+            System.out.println("--------------------------------------------------");
+            for (Technology technology : technologies) {
+                System.out.println("ID: " + technology.getId() +
+                        ", Tên: " + technology.getName() +
+                        ", Trạng thái: " + technology.getStatus());
+            }
+            System.out.println("***************SEARCH RESULTS**************");
             System.out.println("1. Nhập số trang bạn muốn chuyển sang");
             System.out.println("2. Trang trước");
             System.out.println("3. Trang sau");
@@ -151,11 +216,12 @@ public class TechnologyUI {
                 switch (searchChoice) {
                     case 1:
                         System.out.print("Nhập số trang: ");
-                        pageNumber = Integer.parseInt(scanner.nextLine());
-                        if (pageNumber < 1 || pageNumber > totalPages) {
-                            System.err.println("Số trang phải từ 1 đến " + totalPages + ".");
-                            pageNumber = 1;
+                        int newPage = Integer.parseInt(scanner.nextLine());
+                        if (newPage < 1) {
+                            System.err.println("Số trang phải lớn hơn 0.");
+                            break;
                         }
+                        pageNumber = newPage;
                         break;
                     case 2:
                         if (pageNumber > 1) {
@@ -165,7 +231,7 @@ public class TechnologyUI {
                         }
                         break;
                     case 3:
-                        if (pageNumber < totalPages) {
+                        if (!technologies.isEmpty()) {
                             pageNumber++;
                         } else {
                             System.err.println("Đang ở trang cuối cùng!");
@@ -206,7 +272,20 @@ public class TechnologyUI {
                 System.err.println("Không tìm thấy công nghệ với ID: " + id);
             }
         } catch (NumberFormatException e) {
-            System.err.println("Vui lòng nhập ID là một số hợp lệ");
+            System.err.println("Vui lòng nhập ID là số hợp lệ");
+        }
+    }
+
+    private static String getErrorMessage(int errorCode) {
+        switch (errorCode) {
+            case 2:
+                return "Tên hoặc giá trị không hợp lệ";
+            case 3:
+                return "Trường không hợp lệ";
+            case 4:
+                return "Trạng thái không hợp lệ";
+            default:
+                return "Lỗi không xác định";
         }
     }
 }

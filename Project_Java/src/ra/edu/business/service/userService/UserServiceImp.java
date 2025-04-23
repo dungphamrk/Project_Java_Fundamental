@@ -33,23 +33,12 @@ public class UserServiceImp implements UserService {
         return userDao.getCurrentUserId();
     }
 
-    @Override
-    public int findAll(int pageNumber, int pageSize) {
-        return 0;
-    }
+
 
     @Override
     public int save(User user) {
         return userDao.save(user);
     }
 
-    @Override
-    public int update(Scanner scanner) {
-        return 0;
-    }
 
-    @Override
-    public int delete(Scanner scanner) {
-        return 0;
-    }
 }

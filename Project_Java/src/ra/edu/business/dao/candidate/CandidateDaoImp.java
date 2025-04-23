@@ -2,41 +2,37 @@ package ra.edu.business.dao.candidate;
 
 import ra.edu.business.config.ConnectionDB;
 import ra.edu.business.model.candidate.Candidate;
-import ra.edu.presentation.ServiceProvider;
+import ra.edu.business.model.candidate.Gender;
 
 import java.sql.*;
-import java.util.Scanner;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CandidateDaoImp implements CandidateDao {
 
     @Override
-    public int findAll(int pageNumber, int pageSize) {
+    public List<Candidate> findAll(int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
-        int count = 0;
+        List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_FindAllCandidates(?,?)}");
             callStmt.setInt(1, pageNumber);
             callStmt.setInt(2, pageSize);
             ResultSet rs = callStmt.executeQuery();
-            System.out.println("Danh sách ứng viên:");
-            System.out.println("--------------------------------------------------");
             while (rs.next()) {
-                System.out.println("ID: " + rs.getInt("id") +
-                        ", Tên: " + rs.getString("name") +
-                        ", Email: " + rs.getString("email") +
-                        ", Vai trò: " + rs.getString("role") +
-                        ", Trạng thái: " + rs.getString("user_status"));
-                count++;
+                Candidate candidate = new Candidate();
+                candidate.setId(rs.getInt("id"));
+                candidate.setName(rs.getString("name"));
+                candidate.setEmail(rs.getString("email"));
+                candidates.add(candidate);
             }
-            if (count == 0) {
-                System.out.println("Không có ứng viên nào.");
-            }
-            return count;
+            return candidates;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi lấy danh sách ứng viên: " + e.getMessage());
-            return 0;
+            return candidates;
         } finally {
             ConnectionDB.closeConnection(conn, callStmt);
         }
@@ -95,49 +91,27 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public int update(Scanner scanner) {
+    public int updateField(Integer id, String fieldName, Object newValue) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int returnCode = -1;
         try {
             conn = ConnectionDB.openConnection();
             conn.setAutoCommit(false);
-            System.out.println("Nhập thông tin mới cho hồ sơ:");
-            callStmt = conn.prepareCall("{call sp_UpdateCandidate(?,?,?,?,?,?,?,?,?)}");
-            Candidate candidate = new Candidate();
-            candidate.setId(ServiceProvider.userService.getCurrentUserId());
-            candidate.inputData(scanner);
-            callStmt.setInt(1, candidate.getId());
-            callStmt.setString(2, candidate.getName());
-            callStmt.setString(3, candidate.getEmail());
-            callStmt.setString(4, candidate.getPhone());
-            callStmt.setInt(5, candidate.getExperience());
-            callStmt.setString(6, candidate.getGender().name().toLowerCase());
-            callStmt.setString(7, candidate.getDescription());
-            if (candidate.getDob() != null) {
-                callStmt.setDate(8, java.sql.Date.valueOf(candidate.getDob()));
+            callStmt = conn.prepareCall("{call sp_UpdateCandidateField(?,?,?,?)}");
+            callStmt.setInt(1, id);
+            callStmt.setString(2, fieldName);
+            if (newValue instanceof LocalDate) {
+                callStmt.setTimestamp(3, Timestamp.valueOf(((LocalDate) newValue).atStartOfDay()));
             } else {
-                callStmt.setNull(8, Types.DATE);
+                callStmt.setString(3, newValue.toString());
             }
-            callStmt.registerOutParameter(9, Types.INTEGER);
+            callStmt.registerOutParameter(4, Types.INTEGER);
             callStmt.execute();
-            returnCode = callStmt.getInt(9);
-            if (returnCode == 0) {
-                conn.commit();
-            } else {
-                conn.rollback();
-            }
+            returnCode = callStmt.getInt(4);
             return returnCode;
         } catch (SQLException e) {
-            System.err.println("Lỗi SQL khi cập nhật ứng viên: " + e.getMessage());
-            try {
-                if (conn != null) {
-                    conn.rollback();
-                }
-            } catch (SQLException ex) {
-                System.err.println("Lỗi khi rollback: " + ex.getMessage());
-            }
-            return 0;
+            e.fillInStackTrace();
         } finally {
             try {
                 if (conn != null) {
@@ -148,10 +122,11 @@ public class CandidateDaoImp implements CandidateDao {
             }
             ConnectionDB.closeConnection(conn, callStmt);
         }
+        return returnCode;
     }
 
     @Override
-    public int delete(Scanner scanner) {
+    public int delete(Integer id) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int returnCode = -1;
@@ -159,9 +134,7 @@ public class CandidateDaoImp implements CandidateDao {
             conn = ConnectionDB.openConnection();
             conn.setAutoCommit(false);
             callStmt = conn.prepareCall("{call sp_DeleteCandidate(?,?)}");
-            System.out.println("Nhập ID ứng viên cần xóa:");
-            int candidateId = Integer.parseInt(scanner.nextLine());
-            callStmt.setInt(1, candidateId);
+            callStmt.setInt(1, id);
             callStmt.registerOutParameter(2, Types.INTEGER);
             callStmt.execute();
             returnCode = callStmt.getInt(2);
@@ -194,7 +167,7 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public int changePassword(int userId, String oldPassword, String newPassword) {
+    public int changePassword(Integer userId, String oldPassword, String newPassword) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int returnCode = -1;
@@ -237,7 +210,49 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public boolean lockUnlockAccount(int candidateId, boolean lockStatus) {
+    public int resetPassword(Integer userId, String newPassword) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        int returnCode = -1;
+        try {
+            conn = ConnectionDB.openConnection();
+            conn.setAutoCommit(false);
+            callStmt = conn.prepareCall("{call sp_ResetPassword(?,?,?)}");
+            callStmt.setInt(1, userId);
+            callStmt.setString(2, newPassword);
+            callStmt.registerOutParameter(3, Types.INTEGER);
+            callStmt.execute();
+            returnCode = callStmt.getInt(3);
+            if (returnCode == 0) {
+                conn.commit();
+            } else {
+                conn.rollback();
+            }
+            return returnCode;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi reset mật khẩu: " + e.getMessage());
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+            return 0;
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public boolean lockUnlockAccount(Integer candidateId) {
         Connection conn = null;
         CallableStatement callStmt = null;
         try {
@@ -250,11 +265,9 @@ public class CandidateDaoImp implements CandidateDao {
             int returnCode = callStmt.getInt(2);
             if (returnCode == 0) {
                 conn.commit();
-                System.out.println("Cập nhật trạng thái tài khoản thành công.");
                 return true;
             } else {
                 conn.rollback();
-                System.out.println("Cập nhật trạng thái tài khoản thất bại.");
                 return false;
             }
         } catch (SQLException e) {
@@ -280,140 +293,174 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public boolean searchByName(String name) {
+    public List<Candidate> searchByName(String name) {
         Connection conn = null;
         CallableStatement callStmt = null;
-        boolean found = false;
+        List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_SearchCandidateByName(?)}");
             callStmt.setString(1, "%" + name + "%");
             ResultSet rs = callStmt.executeQuery();
-            System.out.println("Kết quả tìm kiếm ứng viên theo tên:");
-            System.out.println("--------------------------------------------------");
             while (rs.next()) {
-                System.out.println("ID: " + rs.getInt("id") +
-                        ", Tên: " + rs.getString("name") +
-                        ", Email: " + rs.getString("email") +
-                        ", Vai trò: " + rs.getString("role"));
-                found = true;
+                Candidate candidate = new Candidate();
+                candidate.setId(rs.getInt("id"));
+                candidate.setName(rs.getString("name"));
+                candidate.setEmail(rs.getString("email"));
+                candidates.add(candidate);
             }
-            return found;
+            return candidates;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi tìm kiếm ứng viên: " + e.getMessage());
-            return false;
+            return candidates;
         } finally {
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
 
     @Override
-    public boolean filterByExperience(int experience) {
+    public List<Candidate> filterByExperience(int experience) {
         Connection conn = null;
         CallableStatement callStmt = null;
-        boolean found = false;
+        List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_FilterCandidateByExperience(?)}");
             callStmt.setInt(1, experience);
             ResultSet rs = callStmt.executeQuery();
-            System.out.println("Danh sách ứng viên có kinh nghiệm từ " + experience + " năm trở lên:");
-            System.out.println("--------------------------------------------------");
             while (rs.next()) {
-                System.out.println("ID: " + rs.getInt("id") +
-                        ", Tên: " + rs.getString("name") +
-                        ", Email: " + rs.getString("email") +
-                        ", Kinh nghiệm: " + rs.getInt("experience") + " năm");
-                found = true;
+                Candidate candidate = new Candidate();
+                candidate.setId(rs.getInt("id"));
+                candidate.setName(rs.getString("name"));
+                candidate.setName(rs.getString("name"));
+                candidate.setEmail(rs.getString("email"));
+                candidate.setExperience(rs.getInt("experience"));
+                candidates.add(candidate);
             }
-            return found;
+            return candidates;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi lọc ứng viên theo kinh nghiệm: " + e.getMessage());
-            return false;
+            return candidates;
         } finally {
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
 
     @Override
-    public boolean filterByAge(int age) {
+    public List<Candidate> filterByAge(int age) {
         Connection conn = null;
         CallableStatement callStmt = null;
-        boolean found = false;
+        List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_FilterCandidateByAge(?)}");
             callStmt.setInt(1, age);
             ResultSet rs = callStmt.executeQuery();
-            System.out.println("Danh sách ứng viên từ " + age + " tuổi trở lên:");
-            System.out.println("--------------------------------------------------");
             while (rs.next()) {
-                System.out.println("ID: " + rs.getInt("id") +
-                        ", Tên: " + rs.getString("name") +
-                        ", Email: " + rs.getString("email") +
-                        ", Ngày sinh: " + rs.getDate("dob"));
-                found = true;
+                Candidate candidate = new Candidate();
+                candidate.setId(rs.getInt("id"));
+                candidate.setName(rs.getString("name"));
+                candidate.setEmail(rs.getString("email"));
+                candidate.setDob(rs.getDate("dob") != null ? rs.getDate("dob").toLocalDate() : null);
+                candidates.add(candidate);
             }
-            return found;
+            return candidates;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi lọc ứng viên theo tuổi: " + e.getMessage());
-            return false;
+            return candidates;
         } finally {
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
 
     @Override
-    public boolean filterByGender(String gender) {
+    public List<Candidate> filterByGender(String gender) {
         Connection conn = null;
         CallableStatement callStmt = null;
-        boolean found = false;
+        List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_FilterCandidateByGender(?)}");
             callStmt.setString(1, gender.toLowerCase());
             ResultSet rs = callStmt.executeQuery();
-            System.out.println("Danh sách ứng viên có giới tính " + gender + ":");
-            System.out.println("--------------------------------------------------");
             while (rs.next()) {
-                System.out.println("ID: " + rs.getInt("id") +
-                        ", Tên: " + rs.getString("name") +
-                        ", Email: " + rs.getString("email") +
-                        ", Giới tính: " + rs.getString("gender"));
-                found = true;
+                Candidate candidate = new Candidate();
+                candidate.setId(rs.getInt("id"));
+                candidate.setName(rs.getString("name"));
+                candidate.setEmail(rs.getString("email"));
+                candidate.setGender(Gender.valueOf(rs.getString("gender").toUpperCase()));
+                candidates.add(candidate);
             }
-            return found;
+            return candidates;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi lọc ứng viên theo giới tính: " + e.getMessage());
-            return false;
+            return candidates;
+        } catch (IllegalArgumentException e) {
+            System.err.println("Lỗi giá trị enum gender: " + e.getMessage());
+            return candidates;
         } finally {
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
 
     @Override
-    public boolean filterByTechnology(String technology) {
+    public List<Candidate> filterByTechnology(String technology) {
         Connection conn = null;
         CallableStatement callStmt = null;
-        boolean found = false;
+        List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_FilterCandidateByTechnology(?)}");
             callStmt.setString(1, "%" + technology + "%");
             ResultSet rs = callStmt.executeQuery();
-            System.out.println("Danh sách ứng viên sử dụng công nghệ " + technology + ":");
-            System.out.println("--------------------------------------------------");
             while (rs.next()) {
-                System.out.println("ID: " + rs.getInt("id") +
-                        ", Tên: " + rs.getString("name") +
-                        ", Email: " + rs.getString("email") +
-                        ", Công nghệ: " + rs.getString("technology_name"));
-                found = true;
+                Candidate candidate = new Candidate();
+                candidate.setId(rs.getInt("id"));
+                candidate.setName(rs.getString("name"));
+                candidate.setEmail(rs.getString("email"));
+                // Giả sử có một trường để lưu công nghệ, nếu không thì bỏ qua
+                candidates.add(candidate);
             }
-            return found;
+            return candidates;
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi lọc ứng viên theo công nghệ: " + e.getMessage());
-            return false;
+            return candidates;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public Candidate getCandidateById(Integer userId) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        Candidate candidate = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_GetCandidateById(?)}");
+            callStmt.setInt(1, userId);
+            ResultSet rs = callStmt.executeQuery();
+            if (rs.next()) {
+                candidate = new Candidate();
+                candidate.setId(rs.getInt("id"));
+                candidate.setName(rs.getString("name"));
+                candidate.setEmail(rs.getString("email"));
+                candidate.setPhone(rs.getString("phone"));
+                candidate.setExperience(rs.getInt("experience"));
+                candidate.setGender(Gender.valueOf(rs.getString("gender").toUpperCase()));
+                candidate.setDescription(rs.getString("description"));
+                Date dob = rs.getDate("dob");
+                if (dob != null) {
+                    candidate.setDob(dob.toLocalDate());
+                }
+            }
+            return candidate;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi lấy thông tin ứng viên: " + e.getMessage());
+            return null;
+        } catch (IllegalArgumentException e) {
+            System.err.println("Lỗi giá trị enum gender: " + e.getMessage());
+            return null;
         } finally {
             ConnectionDB.closeConnection(conn, callStmt);
         }

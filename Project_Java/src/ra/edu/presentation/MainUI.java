@@ -2,6 +2,8 @@ package ra.edu.presentation;
 
 import ra.edu.business.model.candidate.Candidate;
 import ra.edu.business.model.user.User;
+import ra.edu.presentation.admin.AdminUI;
+import ra.edu.presentation.candidate.CandidateUI;
 
 import java.util.Scanner;
 
@@ -10,6 +12,9 @@ import static ra.edu.presentation.ServiceProvider.userService;
 
 public class MainUI {
 
+    public static void ClearConsole(){
+        for (int i = 0; i < 50; ++i) System.out.println();
+    }
     public static void displayMainMenu(Scanner scanner) {
         String loggedInRole = userService.isLoggedIn();
         if (loggedInRole != null) {
@@ -81,6 +86,7 @@ public class MainUI {
                 if (role.equalsIgnoreCase("CANDIDATE")) {
                     CandidateUI.displayCandidateMenu(scanner);
                 } else if (role.equalsIgnoreCase("ADMIN")) {
+                    ClearConsole();
                     AdminUI.displayAdminMenu(scanner);
                 }
             }

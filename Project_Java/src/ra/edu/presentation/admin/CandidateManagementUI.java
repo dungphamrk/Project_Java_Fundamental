@@ -1,15 +1,14 @@
-package ra.edu.presentation;
+package ra.edu.presentation.admin;
 
+import ra.edu.business.model.candidate.Candidate;
 import ra.edu.business.service.candidateService.CandidateService;
 import ra.edu.business.service.candidateService.CandidateServiceImp;
 
+import java.util.List;
 import java.util.Scanner;
-import java.security.SecureRandom;
 
 public class CandidateManagementUI {
     private static final CandidateService candidateService = new CandidateServiceImp();
-    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
-    private static final int PASSWORD_LENGTH = 12;
 
     public static void displayCandidateManagementMenu(Scanner scanner) {
         do {
@@ -52,7 +51,7 @@ public class CandidateManagementUI {
                         filterCandidatesByTechnology(scanner);
                         break;
                     case 9:
-                        return; // Quay lại AdminUI
+                        return;
                     default:
                         System.err.println("Vui lòng chọn từ 1-9");
                 }
@@ -63,35 +62,42 @@ public class CandidateManagementUI {
     }
 
     private static void displayCandidateList(Scanner scanner) {
-        int count = candidateService.findAll(1, 5);
-        if (count == 0) {
+        List<Candidate> candidates = candidateService.findAll(1, 5);
+        if (candidates.isEmpty()) {
             System.out.println("Không có ứng viên nào để hiển thị.");
+        } else {
+            System.out.println("Danh sách ứng viên:");
+            System.out.println("--------------------------------------------------");
+            for (Candidate candidate : candidates) {
+                System.out.println("ID: " + candidate.getId() +
+                        ", Tên: " + candidate.getName() +
+                        ", Email: " + candidate.getEmail());
+            }
         }
     }
 
     private static void lockUnlockCandidateAccount(Scanner scanner) {
-        // Hiển thị danh sách ứng viên với trạng thái
-        int count = candidateService.findAll(1, Integer.MAX_VALUE); // Lấy tất cả ứng viên
-        if (count == 0) {
+        List<Candidate> candidates = candidateService.findAll(1, 5);
+        if (candidates.isEmpty()) {
             System.out.println("Không có ứng viên nào để khóa/mở khóa.");
             return;
         }
+        displayCandidateList(scanner);
 
         System.out.println("Nhập ID ứng viên cần khóa/mở khóa:");
         try {
             int candidateId = Integer.parseInt(scanner.nextLine());
-
-            // Xác nhận thay đổi trạng thái
-            System.out.println("Bạn có chắc chắn muốn thay đổi trạng thái tài khoản (khóa -> mở khóa hoặc ngược lại)? (Y/N):");
+            System.out.println("Bạn có chắc chắn muốn thay đổi trạng thái tài khoản? (Y/N):");
             String confirmation = scanner.nextLine().trim().toUpperCase();
             if (!confirmation.equals("Y")) {
                 System.out.println("Hủy thao tác khóa/mở khóa.");
                 return;
             }
 
-            // Gọi service để thay đổi trạng thái (logic trạng thái sẽ được xử lý ở tầng DAO)
-            boolean success = candidateService.lockUnlockAccount(candidateId, false); // Tham số lockStatus không quan trọng vì sẽ đảo trạng thái
-            if (!success) {
+            boolean success = candidateService.lockUnlockAccount(candidateId);
+            if (success) {
+                System.out.println("Thay đổi trạng thái tài khoản thành công.");
+            } else {
                 System.out.println("Không tìm thấy ứng viên hoặc cập nhật thất bại.");
             }
         } catch (NumberFormatException e) {
@@ -103,43 +109,41 @@ public class CandidateManagementUI {
         System.out.println("Nhập ID ứng viên cần reset mật khẩu:");
         try {
             int candidateId = Integer.parseInt(scanner.nextLine());
-
-            // Xác nhận reset mật khẩu
-            System.out.println("Bạn có chắc chắn muốn reset mật khẩu cho ứng viên này? (Y/N):");
+            System.out.println("Bạn có chắc chắn muốn reset mật khẩu? (Y/N):");
             String confirmation = scanner.nextLine().trim().toUpperCase();
             if (!confirmation.equals("Y")) {
                 System.out.println("Hủy thao tác reset mật khẩu.");
                 return;
             }
 
-            // Tạo mật khẩu ngẫu nhiên
-            String newPassword = generateRandomPassword();
-            int result = candidateService.changePassword(candidateId, "", newPassword);
-            if (result == 1) {
+            String newPassword = candidateService.generateRandomPassword();
+            int result = candidateService.resetPassword(candidateId, newPassword);
+            if (result == 0) {
                 System.out.println("Reset mật khẩu thành công. Mật khẩu mới: " + newPassword);
+            } else if (result == 1) {
+                System.err.println("Mật khẩu mới không hợp lệ!");
             } else {
-                System.out.println("Reset mật khẩu thất bại, kiểm tra ID ứng viên.");
+                System.err.println("Reset mật khẩu thất bại, kiểm tra ID ứng viên.");
             }
         } catch (NumberFormatException e) {
             System.err.println("ID ứng viên phải là số nguyên.");
         }
     }
 
-    private static String generateRandomPassword() {
-        SecureRandom random = new SecureRandom();
-        StringBuilder password = new StringBuilder(PASSWORD_LENGTH);
-        for (int i = 0; i < PASSWORD_LENGTH; i++) {
-            password.append(CHARACTERS.charAt(random.nextInt(CHARACTERS.length())));
-        }
-        return password.toString();
-    }
-
     private static void searchCandidateByName(Scanner scanner) {
         System.out.println("Nhập tên ứng viên cần tìm kiếm:");
         String name = scanner.nextLine();
-        boolean found = candidateService.searchByName(name);
-        if (!found) {
+        List<Candidate> candidates = candidateService.searchByName(name);
+        if (candidates.isEmpty()) {
             System.out.println("Không tìm thấy ứng viên với tên: " + name);
+        } else {
+            System.out.println("Kết quả tìm kiếm ứng viên theo tên:");
+            System.out.println("--------------------------------------------------");
+            for (Candidate candidate : candidates) {
+                System.out.println("ID: " + candidate.getId() +
+                        ", Tên: " + candidate.getName() +
+                        ", Email: " + candidate.getEmail());
+            }
         }
     }
 
@@ -147,13 +151,18 @@ public class CandidateManagementUI {
         System.out.println("Nhập số năm kinh nghiệm tối thiểu:");
         try {
             int experience = Integer.parseInt(scanner.nextLine());
-            if (experience < 0) {
-                System.err.println("Kinh nghiệm không thể âm.");
-                return;
-            }
-            boolean found = candidateService.filterByExperience(experience);
-            if (!found) {
+            List<Candidate> candidates = candidateService.filterByExperience(experience);
+            if (candidates.isEmpty()) {
                 System.out.println("Không tìm thấy ứng viên với kinh nghiệm từ " + experience + " năm trở lên.");
+            } else {
+                System.out.println("Danh sách ứng viên có kinh nghiệm từ " + experience + " năm trở lên:");
+                System.out.println("--------------------------------------------------");
+                for (Candidate candidate : candidates) {
+                    System.out.println("ID: " + candidate.getId() +
+                            ", Tên: " + candidate.getName() +
+                            ", Email: " + candidate.getEmail() +
+                            ", Kinh nghiệm: " + candidate.getExperience() + " năm");
+                }
             }
         } catch (NumberFormatException e) {
             System.err.println("Kinh nghiệm phải là số nguyên.");
@@ -164,13 +173,18 @@ public class CandidateManagementUI {
         System.out.println("Nhập độ tuổi tối thiểu:");
         try {
             int age = Integer.parseInt(scanner.nextLine());
-            if (age < 0) {
-                System.err.println("Tuổi không thể âm.");
-                return;
-            }
-            boolean found = candidateService.filterByAge(age);
-            if (!found) {
+            List<Candidate> candidates = candidateService.filterByAge(age);
+            if (candidates.isEmpty()) {
                 System.out.println("Không tìm thấy ứng viên từ " + age + " tuổi trở lên.");
+            } else {
+                System.out.println("Danh sách ứng viên từ " + age + " tuổi trở lên:");
+                System.out.println("--------------------------------------------------");
+                for (Candidate candidate : candidates) {
+                    System.out.println("ID: " + candidate.getId() +
+                            ", Tên: " + candidate.getName() +
+                            ", Email: " + candidate.getEmail() +
+                            ", Ngày sinh: " + (candidate.getDob() != null ? candidate.getDob() : "Chưa thiết lập"));
+                }
             }
         } catch (NumberFormatException e) {
             System.err.println("Tuổi phải là số nguyên.");
@@ -179,23 +193,36 @@ public class CandidateManagementUI {
 
     private static void filterCandidatesByGender(Scanner scanner) {
         System.out.println("Nhập giới tính (MALE/FEMALE):");
-        String gender = scanner.nextLine().toUpperCase();
-        if (!gender.equals("MALE") && !gender.equals("FEMALE")) {
-            System.err.println("Giới tính phải là MALE hoặc FEMALE.");
-            return;
-        }
-        boolean found = candidateService.filterByGender(gender);
-        if (!found) {
+        String gender = scanner.nextLine();
+        List<Candidate> candidates = candidateService.filterByGender(gender);
+        if (candidates.isEmpty()) {
             System.out.println("Không tìm thấy ứng viên với giới tính: " + gender);
+        } else {
+            System.out.println("Danh sách ứng viên có giới tính " + gender + ":");
+            System.out.println("--------------------------------------------------");
+            for (Candidate candidate : candidates) {
+                System.out.println("ID: " + candidate.getId() +
+                        ", Tên: " + candidate.getName() +
+                        ", Email: " + candidate.getEmail() +
+                        ", Giới tính: " + candidate.getGender());
+            }
         }
     }
 
     private static void filterCandidatesByTechnology(Scanner scanner) {
         System.out.println("Nhập công nghệ cần lọc (ví dụ: Java, Python):");
         String technology = scanner.nextLine();
-        boolean found = candidateService.filterByTechnology(technology);
-        if (!found) {
+        List<Candidate> candidates = candidateService.filterByTechnology(technology);
+        if (candidates.isEmpty()) {
             System.out.println("Không tìm thấy ứng viên với công nghệ: " + technology);
+        } else {
+            System.out.println("Danh sách ứng viên sử dụng công nghệ " + technology + ":");
+            System.out.println("--------------------------------------------------");
+            for (Candidate candidate : candidates) {
+                System.out.println("ID: " + candidate.getId() +
+                        ", Tên: " + candidate.getName() +
+                        ", Email: " + candidate.getEmail());
+            }
         }
     }
 }
