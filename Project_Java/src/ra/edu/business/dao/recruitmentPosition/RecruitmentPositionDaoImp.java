@@ -21,13 +21,14 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
     public List<RecruitmentPosition> getAllPositions(int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         List<RecruitmentPosition> positions = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_FindAllRecruitmentPositions(?,?)}");
             callStmt.setInt(1, pageNumber);
             callStmt.setInt(2, pageSize);
-            ResultSet rs = callStmt.executeQuery();
+            rs = callStmt.executeQuery();
             while (rs.next()) {
                 RecruitmentPosition position = new RecruitmentPosition();
                 position.setId(rs.getInt("id"));
@@ -52,6 +53,11 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
             System.err.println("Lỗi SQL khi lấy danh sách vị trí tuyển dụng: " + e.getMessage());
             return positions;
         } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
@@ -60,13 +66,14 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
     public List<RecruitmentPosition> getActivePositions(int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         List<RecruitmentPosition> positions = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_GetActiveRecruitmentPositions(?,?)}");
             callStmt.setInt(1, pageNumber);
             callStmt.setInt(2, pageSize);
-            ResultSet rs = callStmt.executeQuery();
+            rs = callStmt.executeQuery();
             while (rs.next()) {
                 RecruitmentPosition position = new RecruitmentPosition();
                 position.setId(rs.getInt("id"));
@@ -91,6 +98,11 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
             System.err.println("Lỗi SQL khi lấy danh sách vị trí công việc: " + e.getMessage());
             return positions;
         } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
@@ -239,13 +251,19 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
             System.err.println("Lỗi SQL khi kiểm tra vị trí công việc: " + e.getMessage());
             return false;
         } finally {
-            if (rs != null) {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
+            if (stmt != null) {
                 try {
-                    rs.close();
+                    stmt.close();
                 } catch (SQLException e) {
-                    System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+                    System.err.println("Lỗi khi đóng PreparedStatement: " + e.getMessage());
                 }
             }
+            ConnectionDB.closeConnection(conn, null);
         }
     }
 
@@ -253,12 +271,13 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
     public List<Technology> getPositionTechnologies(Integer positionId) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         List<Technology> technologies = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_GetPositionTechnologies(?)}");
             callStmt.setInt(1, positionId);
-            ResultSet rs = callStmt.executeQuery();
+            rs = callStmt.executeQuery();
             while (rs.next()) {
                 Technology technology = new Technology();
                 technology.setId(rs.getInt("id"));
@@ -271,6 +290,11 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
             System.err.println("Lỗi SQL khi lấy danh sách công nghệ của vị trí tuyển dụng: " + e.getMessage());
             return technologies;
         } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
@@ -298,7 +322,9 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi thêm công nghệ cho vị trí tuyển dụng: " + e.getMessage());
             try {
-                conn.rollback();
+                if (conn != null) {
+                    conn.rollback();
+                }
             } catch (SQLException ex) {
                 System.err.println("Lỗi khi rollback: " + ex.getMessage());
             }
@@ -338,7 +364,9 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi xóa công nghệ khỏi vị trí tuyển dụng: " + e.getMessage());
             try {
-                conn.rollback();
+                if (conn != null) {
+                    conn.rollback();
+                }
             } catch (SQLException ex) {
                 System.err.println("Lỗi khi rollback: " + ex.getMessage());
             }
@@ -351,6 +379,42 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
             } catch (SQLException ex) {
                 System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
             }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int getTotalPositionsCount() {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_GetTotalPositionsCount(?)}");
+            callStmt.registerOutParameter(1, Types.INTEGER);
+            callStmt.execute();
+            return callStmt.getInt(1);
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi đếm tổng số vị trí tuyển dụng: " + e.getMessage());
+            return 0;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int getActivePositionsCount() {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_GetActivePositionsCount(?)}");
+            callStmt.registerOutParameter(1, Types.INTEGER);
+            callStmt.execute();
+            return callStmt.getInt(1);
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi đếm tổng số vị trí tuyển dụng active: " + e.getMessage());
+            return 0;
+        } finally {
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }

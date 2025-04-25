@@ -9,4 +9,6 @@ public interface UserDao  {
     String isLoggedIn();
     int getCurrentUserId();
     int save(User user);
+    User getUserById(int id);
+
 }

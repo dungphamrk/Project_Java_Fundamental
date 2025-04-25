@@ -4,19 +4,32 @@ import ra.edu.business.model.candidate.Candidate;
 import ra.edu.business.service.candidateService.CandidateService;
 import ra.edu.business.service.candidateService.CandidateServiceImp;
 import ra.edu.presentation.ServiceProvider;
+import ra.edu.validate.CandidateValidator;
 
 import java.util.Scanner;
 
+import static ra.edu.presentation.ServiceProvider.candidateService;
+
 public class ProfileUI {
-    private static final CandidateService candidateService = new CandidateServiceImp();
+    // Mã màu ANSI sáng
+    private static final String RESET = "\u001B[0m";
+    private static final String RED = "\u001B[91m";
+    private static final String GREEN = "\u001B[92m";
+    private static final String YELLOW = "\u001B[93m";
+    private static final String CYAN = "\u001B[96m";
+    private static final String MAGENTA = "\u001B[95m";
+    private static final String WHITE = "\u001B[97m";
+
 
     public static void displayProfileMenu(Scanner scanner) {
         do {
-            System.out.println("***************PROFILE MANAGEMENT**************");
-            System.out.println("1. Cập nhật thông tin cá nhân");
+            System.out.println(MAGENTA + "=============================================");
+            System.out.println("         QUẢN LÝ THÔNG TIN CÁ NHÂN         ");
+            System.out.println("=============================================" + RESET);
+            System.out.println(CYAN + "1. Cập nhật thông tin cá nhân");
             System.out.println("2. Đổi mật khẩu");
-            System.out.println("3. Quay lại");
-            System.out.print("Lựa chọn của bạn: ");
+            System.out.println("3. Quay lại" + RESET);
+            System.out.print(MAGENTA + "Lựa chọn của bạn: " + RESET);
             try {
                 int choice = Integer.parseInt(scanner.nextLine());
                 switch (choice) {
@@ -27,13 +40,15 @@ public class ProfileUI {
                         changePassword(scanner);
                         break;
                     case 3:
-                        return; // Quay lại CandidateUI
+                        return;
                     default:
-                        System.err.println("Vui lòng chọn từ 1-3");
+                        System.out.println(RED + "Vui lòng chọn từ 1-3" + RESET);
                 }
             } catch (NumberFormatException e) {
-                System.err.println("Vui lòng nhập số từ 1-3");
+                System.out.println(RED + "Vui lòng nhập số từ 1-3" + RESET);
             }
+            System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
+            scanner.nextLine();
         } while (true);
     }
 
@@ -41,116 +56,96 @@ public class ProfileUI {
         int userId = ServiceProvider.userService.getCurrentUserId();
         Candidate candidate = candidateService.getCandidateById(userId);
         if (candidate == null) {
-            System.err.println("Không tìm thấy thông tin ứng viên!");
+            System.out.println(RED + "Không tìm thấy thông tin ứng viên!" + RESET);
+            System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
+            scanner.nextLine();
             return;
         }
 
-        // Hiển thị thông tin hiện tại
-        System.out.println("Thông tin cá nhân hiện tại:");
-        System.out.println("1. Tên: " + candidate.getName());
-        System.out.println("2. Email: " + candidate.getEmail());
-        System.out.println("3. Số điện thoại: " + candidate.getPhone());
-        System.out.println("4. Kinh nghiệm: " + candidate.getExperience() + " năm");
-        System.out.println("5. Giới tính: " + candidate.getGender());
-        System.out.println("6. Ngày sinh: " + (candidate.getDob() != null ? candidate.getDob() : "Chưa thiết lập"));
-        System.out.println("7. Mô tả: " + candidate.getDescription());
+        System.out.println(MAGENTA + "=== THÔNG TIN CÁ NHÂN HIỆN TẠI ===" + RESET);
+        System.out.println(YELLOW + "+----+-----------------------------+");
+        System.out.println("| STT| Thông tin                   |");
+        System.out.println("+----+-----------------------------+" + RESET);
+        System.out.printf(WHITE + "| %-2d | %-27s |%n", 1, "Tên: " + candidate.getName());
+        System.out.printf("| %-2d | %-27s |%n", 2, "Email: " + candidate.getEmail());
+        System.out.printf("| %-2d | %-27s |%n", 3, "Số điện thoại: " + candidate.getPhone());
+        System.out.printf("| %-2d | %-27s |%n", 4, "Kinh nghiệm: " + candidate.getExperience() + " năm");
+        System.out.printf("| %-2d | %-27s |%n", 5, "Giới tính: " + candidate.getGender());
+        System.out.printf("| %-2d | %-27s |%n", 6, "Ngày sinh: " + (candidate.getDob() != null ? candidate.getDob() : "Chưa thiết lập"));
+        System.out.printf("| %-2d | %-27s |%n", 7, "Mô tả: " + (candidate.getDescription() != null ? candidate.getDescription() : "Chưa thiết lập"));
+        System.out.println(YELLOW + "+----+-----------------------------+" + RESET);
 
-        // Thu thập lựa chọn
-        System.out.println("Chọn thông tin muốn cập nhật (1-7, nhập 0 để thoát): ");
+        System.out.print(MAGENTA + "Chọn thông tin muốn cập nhật (1-7, nhập 0 để thoát): " + RESET);
         try {
             int fieldChoice = Integer.parseInt(scanner.nextLine());
             if (fieldChoice == 0) return;
 
             String newValue;
+            System.out.print(WHITE + "Nhập giá trị mới: " + RESET);
             switch (fieldChoice) {
                 case 1:
-                    System.out.print("Nhập tên mới: ");
-                    newValue = scanner.nextLine();
+                    newValue = CandidateValidator.inputName(scanner);
                     break;
                 case 2:
-                    System.out.print("Nhập email mới: ");
-                    newValue = scanner.nextLine();
+                    newValue = CandidateValidator.inputEmail(scanner);
                     break;
                 case 3:
-                    System.out.print("Nhập số điện thoại mới: ");
-                    newValue = scanner.nextLine();
+                    newValue = CandidateValidator.inputPhone(scanner);
                     break;
                 case 4:
-                    System.out.print("Nhập số năm kinh nghiệm mới: ");
-                    newValue = scanner.nextLine();
+                    newValue = String.valueOf(CandidateValidator.inputExperience(scanner));
                     break;
                 case 5:
-                    System.out.print("Nhập giới tính mới (MALE/FEMALE): ");
-                    newValue = scanner.nextLine();
+                    newValue = String.valueOf(CandidateValidator.inputGender(scanner));
                     break;
                 case 6:
-                    System.out.print("Nhập ngày sinh mới (YYYY-MM-DD): ");
-                    newValue = scanner.nextLine();
+                    newValue = String.valueOf(CandidateValidator.inputDob(scanner));
                     break;
                 case 7:
-                    System.out.print("Nhập mô tả mới: ");
-                    newValue = scanner.nextLine();
+                    newValue = CandidateValidator.inputDescription(scanner);
                     break;
                 default:
-                    System.err.println("Lựa chọn không hợp lệ!");
+                    System.out.println(RED + "Lựa chọn không hợp lệ!" + RESET);
                     return;
             }
-
-            int updateResult = candidateService.updateField(userId, String.valueOf(fieldChoice), newValue);
-            switch (updateResult) {
-                case 0:
-                    System.out.println("Cập nhật thông tin thành công!");
-                    break;
-                case 1:
-                    System.err.println("Giá trị rỗng hoặc không hợp lệ!");
-                    break;
-                case 2:
-                    System.err.println("Email không hợp lệ!");
-                    break;
-                case 3:
-                    System.err.println("Kinh nghiệm phải là số!");
-                    break;
-                case 4:
-                    System.err.println("Giới tính phải là MALE hoặc FEMALE!");
-                    break;
-                case 5:
-                    System.err.println("Ngày sinh không đúng định dạng (YYYY-MM-DD)!");
-                    break;
-                default:
-                    System.err.println("Cập nhật thông tin thất bại!");
-            }
+            candidateService.updateField(userId, String.valueOf(fieldChoice), newValue);
         } catch (NumberFormatException e) {
-            System.err.println("Vui lòng nhập số từ 0-7");
+            System.out.println(RED + "Vui lòng nhập số từ 0-7" + RESET);
         }
     }
 
     private static void changePassword(Scanner scanner) {
-        System.out.print("Nhập mật khẩu cũ: ");
+        System.out.println(MAGENTA + "=== ĐỔI MẬT KHẨU ===" + RESET);
+        System.out.println(WHITE + "Nhập số điện thoại để xác thực: " + RESET);
+        String phone = scanner.nextLine();
+        System.out.print(WHITE + "Nhập mật khẩu cũ: " + RESET);
         String oldPassword = scanner.nextLine();
-        System.out.print("Nhập mật khẩu mới: ");
+        System.out.print(WHITE + "Nhập mật khẩu mới: " + RESET);
         String newPassword = scanner.nextLine();
-        System.out.print("Xác nhận mật khẩu mới: ");
+        System.out.print(WHITE + "Xác nhận mật khẩu mới: " + RESET);
         String confirmPassword = scanner.nextLine();
 
         if (!newPassword.equals(confirmPassword)) {
-            System.err.println("Mật khẩu mới và xác nhận mật khẩu không khớp!");
+            System.out.println(RED + "Mật khẩu mới và xác nhận mật khẩu không khớp!" + RESET);
+            System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
+            scanner.nextLine();
             return;
         }
 
         int userId = ServiceProvider.userService.getCurrentUserId();
-        int result = candidateService.changePassword(userId, oldPassword, newPassword);
+        int result = candidateService.changePassword(userId, oldPassword, newPassword,phone);
         switch (result) {
             case 1:
-                System.out.println("Đổi mật khẩu thành công!");
+                System.out.println(GREEN + "Đổi mật khẩu thành công!" + RESET);
                 break;
             case 2:
-                System.err.println("Mật khẩu cũ không đúng!");
+                System.out.println(RED + "Mật khẩu cũ không đúng!" + RESET);
                 break;
             case 3:
-                System.err.println("Mật khẩu mới không hợp lệ (ít nhất 6 ký tự)!");
+                System.out.println(RED + "Mật khẩu mới không hợp lệ (ít nhất 6 ký tự)!" + RESET);
                 break;
             default:
-                System.err.println("Đổi mật khẩu thất bại!");
+                System.out.println(RED + "Đổi mật khẩu thất bại!" + RESET);
         }
     }
 }

@@ -44,9 +44,7 @@ public class UserDaoImp implements UserDao {
     public void logout() {
         File file = new File("login_info.txt");
         if (file.exists()) {
-            if (file.delete()) {
-                System.out.println("Đăng xuất thành công. File thông tin đăng nhập đã được xóa.");
-            } else {
+            if (!file.delete()) {
                 System.err.println("Không thể xóa file đăng nhập.");
             }
         } else {
@@ -150,4 +148,60 @@ public class UserDaoImp implements UserDao {
         }
         return returnCode;
     }
+
+    @Override
+    public User getUserById(int id) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        ResultSet rs = null;
+        User user = null;
+
+        try {
+            conn = ConnectionDB.openConnection();
+            conn.setAutoCommit(false);
+            callStmt = conn.prepareCall("{call sp_GetUserById(?,?)}");
+            callStmt.setInt(1, id);
+            callStmt.registerOutParameter(2, Types.INTEGER); // returnCode
+            rs = callStmt.executeQuery();
+            int returnCode = callStmt.getInt(2);
+
+            if (returnCode == 0 && rs.next()) {
+                user = new User();
+                user.setId(rs.getInt("id"));
+                user.setUsername(rs.getString("username"));
+                user.setPassword(rs.getString("password")); // Lưu ý: Có thể không cần lấy password
+                // Thêm các trường khác nếu cần, ví dụ:
+                // user.setEmail(rs.getString("email"));
+                // user.setRole(rs.getString("role"));
+            } else {
+                System.out.println("Không tìm thấy người dùng với ID: " + id);
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi lấy người dùng: " + e.getMessage());
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+        } finally {
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit hoặc đóng ResultSet: " + ex.getMessage());
+            }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+        return user;
+    }
+
+
 }

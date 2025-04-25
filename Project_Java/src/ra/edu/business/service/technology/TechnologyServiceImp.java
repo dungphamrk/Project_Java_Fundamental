@@ -2,7 +2,6 @@ package ra.edu.business.service.technology;
 
 import ra.edu.business.dao.technology.TechnologyDao;
 import ra.edu.business.dao.technology.TechnologyDaoImp;
-import ra.edu.business.model.recruitmentPosition.RecruitmentPosition;
 import ra.edu.business.model.technology.Status;
 import ra.edu.business.model.technology.Technology;
 
@@ -57,7 +56,7 @@ public class TechnologyServiceImp implements TechnologyService {
 
     @Override
     public List<Technology> findAllTechnologiesByCandidates(int pageNumber, int pageSize) {
-        return technologyDao.findAllTechnologiesByCandidate( pageNumber, pageSize);
+        return technologyDao.findAllTechnologiesByCandidate(pageNumber, pageSize);
     }
 
     @Override
@@ -73,7 +72,7 @@ public class TechnologyServiceImp implements TechnologyService {
     }
 
     @Override
-    public Technology findById(Integer id) {
+    public Technology findById(int id) {
         if (id <= 0) {
             return null; // ID không hợp lệ
         }
@@ -92,11 +91,11 @@ public class TechnologyServiceImp implements TechnologyService {
     }
 
     @Override
-    public List<Technology> getCandidateTechnologies(Integer candidateId) {
-        if (candidateId <= 0) {
-            return List.of(); // ID không hợp lệ
+    public TechnologyPage getCandidateTechnologiesWithCount(Integer candidateId, int pageNumber, int pageSize) {
+        if (candidateId <= 0 || pageNumber < 1 || pageSize < 1) {
+            return new TechnologyPage(List.of(), 0);
         }
-        return technologyDao.getCandidateTechnologies(candidateId);
+        return technologyDao.getCandidateTechnologiesWithCount(candidateId, pageNumber, pageSize);
     }
 
     @Override
@@ -120,4 +119,24 @@ public class TechnologyServiceImp implements TechnologyService {
         return findAll(pageNumber, pageSize);
     }
 
+    @Override
+    public TechnologyPage findActiveTechnologiesWithCount(int pageNumber, int pageSize) {
+        if (pageNumber < 1 || pageSize < 1) {
+            return new TechnologyPage(List.of(), 0);
+        }
+        return technologyDao.findActiveTechnologiesWithCount(pageNumber, pageSize);
+    }
+
+    @Override
+    public int getTotalTechnologiesCount() {
+        return technologyDao.getTotalTechnologiesCount();
+    }
+
+    @Override
+    public int getTotalTechnologiesByName(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return 0;
+        }
+        return technologyDao.getTotalTechnologiesByName(keyword);
+    }
 }

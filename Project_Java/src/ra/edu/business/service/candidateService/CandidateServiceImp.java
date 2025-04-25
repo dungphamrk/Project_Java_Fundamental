@@ -18,6 +18,9 @@ public class CandidateServiceImp implements CandidateService {
 
     @Override
     public List<Candidate> findAll(int pageNumber, int pageSize) {
+        if (pageNumber < 1 || pageSize < 1) {
+            return List.of();
+        }
         return candidateDao.findAll(pageNumber, pageSize);
     }
 
@@ -34,7 +37,6 @@ public class CandidateServiceImp implements CandidateService {
 
     @Override
     public int updateField(Integer userId, String fieldChoice, Object newValue) {
-        // Ánh xạ fieldChoice sang fieldName
         String fieldName;
         switch (fieldChoice) {
             case "1":
@@ -62,7 +64,6 @@ public class CandidateServiceImp implements CandidateService {
                 return 6; // Mã lỗi: trường không hợp lệ
         }
 
-        // Kiểm tra giá trị hợp lệ
         if (newValue == null || newValue.toString().trim().isEmpty()) {
             return 1; // Mã lỗi: giá trị rỗng
         }
@@ -105,11 +106,11 @@ public class CandidateServiceImp implements CandidateService {
     }
 
     @Override
-    public int changePassword(Integer userId, String oldPassword, String newPassword) {
+    public int changePassword(Integer userId, String oldPassword, String newPassword, String phone) {
         if (newPassword == null || newPassword.length() < 6) {
             return 3; // Mã lỗi: mật khẩu mới không hợp lệ
         }
-        return candidateDao.changePassword(userId, oldPassword, newPassword);
+        return candidateDao.changePassword(userId, oldPassword, newPassword, phone);
     }
 
     @Override
@@ -130,43 +131,43 @@ public class CandidateServiceImp implements CandidateService {
     }
 
     @Override
-    public List<Candidate> searchByName(String name) {
-        if (name == null || name.trim().isEmpty()) {
+    public List<Candidate> searchByName(String name, int pageNumber, int pageSize) {
+        if (name == null || name.trim().isEmpty() || pageNumber < 1 || pageSize < 1) {
             return List.of();
         }
-        return candidateDao.searchByName(name);
+        return candidateDao.searchByName(name, pageNumber, pageSize);
     }
 
     @Override
-    public List<Candidate> filterByExperience(int experience) {
-        if (experience < 0) {
+    public List<Candidate> filterByExperience(int experience, int pageNumber, int pageSize) {
+        if (experience < 0 || pageNumber < 1 || pageSize < 1) {
             return List.of();
         }
-        return candidateDao.filterByExperience(experience);
+        return candidateDao.filterByExperience(experience, pageNumber, pageSize);
     }
 
     @Override
-    public List<Candidate> filterByAge(int age) {
-        if (age < 18) {
+    public List<Candidate> filterByAge(int age, int pageNumber, int pageSize) {
+        if (age < 18 || pageNumber < 1 || pageSize < 1) {
             return List.of();
         }
-        return candidateDao.filterByAge(age);
+        return candidateDao.filterByAge(age, pageNumber, pageSize);
     }
 
     @Override
-    public List<Candidate> filterByGender(String gender) {
-        if (gender == null || (!gender.equalsIgnoreCase("male") && !gender.equalsIgnoreCase("female"))) {
+    public List<Candidate> filterByGender(String gender, int pageNumber, int pageSize) {
+        if (gender == null || (!gender.equalsIgnoreCase("male") && !gender.equalsIgnoreCase("female")) || pageNumber < 1 || pageSize < 1) {
             return List.of();
         }
-        return candidateDao.filterByGender(gender);
+        return candidateDao.filterByGender(gender, pageNumber, pageSize);
     }
 
     @Override
-    public List<Candidate> filterByTechnology(String technology) {
-        if (technology == null || technology.trim().isEmpty()) {
+    public List<Candidate> filterByTechnology(String technology, int pageNumber, int pageSize) {
+        if (technology == null || technology.trim().isEmpty() || pageNumber < 1 || pageSize < 1) {
             return List.of();
         }
-        return candidateDao.filterByTechnology(technology);
+        return candidateDao.filterByTechnology(technology, pageNumber, pageSize);
     }
 
     @Override
@@ -182,5 +183,50 @@ public class CandidateServiceImp implements CandidateService {
             password.append(CHARACTERS.charAt(random.nextInt(CHARACTERS.length())));
         }
         return password.toString();
+    }
+
+    @Override
+    public int getTotalCandidatesCount() {
+        return candidateDao.getTotalCandidatesCount();
+    }
+
+    @Override
+    public int getTotalCandidatesByName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return 0;
+        }
+        return candidateDao.getTotalCandidatesByName(name);
+    }
+
+    @Override
+    public int getTotalCandidatesByExperience(int experience) {
+        if (experience < 0) {
+            return 0;
+        }
+        return candidateDao.getTotalCandidatesByExperience(experience);
+    }
+
+    @Override
+    public int getTotalCandidatesByAge(int age) {
+        if (age < 18) {
+            return 0;
+        }
+        return candidateDao.getTotalCandidatesByAge(age);
+    }
+
+    @Override
+    public int getTotalCandidatesByGender(String gender) {
+        if (gender == null || (!gender.equalsIgnoreCase("male") && !gender.equalsIgnoreCase("female"))) {
+            return 0;
+        }
+        return candidateDao.getTotalCandidatesByGender(gender);
+    }
+
+    @Override
+    public int getTotalCandidatesByTechnology(String technology) {
+        if (technology == null || technology.trim().isEmpty()) {
+            return 0;
+        }
+        return candidateDao.getTotalCandidatesByTechnology(technology);
     }
 }

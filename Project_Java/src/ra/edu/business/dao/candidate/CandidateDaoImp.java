@@ -15,18 +15,21 @@ public class CandidateDaoImp implements CandidateDao {
     public List<Candidate> findAll(int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_FindAllCandidates(?,?)}");
             callStmt.setInt(1, pageNumber);
             callStmt.setInt(2, pageSize);
-            ResultSet rs = callStmt.executeQuery();
+            rs = callStmt.executeQuery();
             while (rs.next()) {
                 Candidate candidate = new Candidate();
                 candidate.setId(rs.getInt("id"));
                 candidate.setName(rs.getString("name"));
                 candidate.setEmail(rs.getString("email"));
+                candidate.setExperience(rs.getInt("experience"));
+                candidate.setGender(Gender.valueOf(rs.getString("gender").toUpperCase()));
                 candidates.add(candidate);
             }
             return candidates;
@@ -34,6 +37,11 @@ public class CandidateDaoImp implements CandidateDao {
             System.err.println("Lỗi SQL khi lấy danh sách ứng viên: " + e.getMessage());
             return candidates;
         } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
@@ -109,9 +117,22 @@ public class CandidateDaoImp implements CandidateDao {
             callStmt.registerOutParameter(4, Types.INTEGER);
             callStmt.execute();
             returnCode = callStmt.getInt(4);
+            if (returnCode == 0) {
+                conn.commit();
+            } else {
+                conn.rollback();
+            }
             return returnCode;
         } catch (SQLException e) {
-            e.fillInStackTrace();
+            System.err.println("Lỗi SQL khi cập nhật trường ứng viên: " + e.getMessage());
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+            return 1;
         } finally {
             try {
                 if (conn != null) {
@@ -122,7 +143,6 @@ public class CandidateDaoImp implements CandidateDao {
             }
             ConnectionDB.closeConnection(conn, callStmt);
         }
-        return returnCode;
     }
 
     @Override
@@ -167,20 +187,21 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public int changePassword(Integer userId, String oldPassword, String newPassword) {
+    public int changePassword(Integer userId, String oldPassword, String newPassword, String phone) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int returnCode = -1;
         try {
             conn = ConnectionDB.openConnection();
             conn.setAutoCommit(false);
-            callStmt = conn.prepareCall("{call sp_UpdatePassword(?,?,?,?)}");
+            callStmt = conn.prepareCall("{call sp_UpdatePassword(?,?,?,?,?)}");
             callStmt.setInt(1, userId);
             callStmt.setString(2, oldPassword);
             callStmt.setString(3, newPassword);
-            callStmt.registerOutParameter(4, Types.INTEGER);
+            callStmt.setString(4, phone);
+            callStmt.registerOutParameter(5, Types.INTEGER);
             callStmt.execute();
-            returnCode = callStmt.getInt(4);
+            returnCode = callStmt.getInt(5);
             if (returnCode == 1) {
                 conn.commit();
             } else {
@@ -293,20 +314,25 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public List<Candidate> searchByName(String name) {
+    public List<Candidate> searchByName(String name, int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
-            callStmt = conn.prepareCall("{call sp_SearchCandidateByName(?)}");
+            callStmt = conn.prepareCall("{call sp_SearchCandidateByName(?,?,?)}");
             callStmt.setString(1, "%" + name + "%");
-            ResultSet rs = callStmt.executeQuery();
+            callStmt.setInt(2, pageNumber);
+            callStmt.setInt(3, pageSize);
+            rs = callStmt.executeQuery();
             while (rs.next()) {
                 Candidate candidate = new Candidate();
                 candidate.setId(rs.getInt("id"));
                 candidate.setName(rs.getString("name"));
                 candidate.setEmail(rs.getString("email"));
+                candidate.setExperience(rs.getInt("experience"));
+                candidate.setGender(Gender.valueOf(rs.getString("gender").toUpperCase()));
                 candidates.add(candidate);
             }
             return candidates;
@@ -314,27 +340,35 @@ public class CandidateDaoImp implements CandidateDao {
             System.err.println("Lỗi SQL khi tìm kiếm ứng viên: " + e.getMessage());
             return candidates;
         } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
 
     @Override
-    public List<Candidate> filterByExperience(int experience) {
+    public List<Candidate> filterByExperience(int experience, int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
-            callStmt = conn.prepareCall("{call sp_FilterCandidateByExperience(?)}");
+            callStmt = conn.prepareCall("{call sp_FilterCandidateByExperience(?,?,?)}");
             callStmt.setInt(1, experience);
-            ResultSet rs = callStmt.executeQuery();
+            callStmt.setInt(2, pageNumber);
+            callStmt.setInt(3, pageSize);
+            rs = callStmt.executeQuery();
             while (rs.next()) {
                 Candidate candidate = new Candidate();
                 candidate.setId(rs.getInt("id"));
                 candidate.setName(rs.getString("name"));
-                candidate.setName(rs.getString("name"));
                 candidate.setEmail(rs.getString("email"));
                 candidate.setExperience(rs.getInt("experience"));
+                candidate.setGender(Gender.valueOf(rs.getString("gender").toUpperCase()));
                 candidates.add(candidate);
             }
             return candidates;
@@ -342,26 +376,35 @@ public class CandidateDaoImp implements CandidateDao {
             System.err.println("Lỗi SQL khi lọc ứng viên theo kinh nghiệm: " + e.getMessage());
             return candidates;
         } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
 
     @Override
-    public List<Candidate> filterByAge(int age) {
+    public List<Candidate> filterByAge(int age, int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
-            callStmt = conn.prepareCall("{call sp_FilterCandidateByAge(?)}");
+            callStmt = conn.prepareCall("{call sp_FilterCandidateByAge(?,?,?)}");
             callStmt.setInt(1, age);
-            ResultSet rs = callStmt.executeQuery();
+            callStmt.setInt(2, pageNumber);
+            callStmt.setInt(3, pageSize);
+            rs = callStmt.executeQuery();
             while (rs.next()) {
                 Candidate candidate = new Candidate();
                 candidate.setId(rs.getInt("id"));
                 candidate.setName(rs.getString("name"));
                 candidate.setEmail(rs.getString("email"));
                 candidate.setDob(rs.getDate("dob") != null ? rs.getDate("dob").toLocalDate() : null);
+                candidate.setGender(Gender.valueOf(rs.getString("gender").toUpperCase()));
                 candidates.add(candidate);
             }
             return candidates;
@@ -369,25 +412,34 @@ public class CandidateDaoImp implements CandidateDao {
             System.err.println("Lỗi SQL khi lọc ứng viên theo tuổi: " + e.getMessage());
             return candidates;
         } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
 
     @Override
-    public List<Candidate> filterByGender(String gender) {
+    public List<Candidate> filterByGender(String gender, int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
-            callStmt = conn.prepareCall("{call sp_FilterCandidateByGender(?)}");
+            callStmt = conn.prepareCall("{call sp_FilterCandidateByGender(?,?,?)}");
             callStmt.setString(1, gender.toLowerCase());
-            ResultSet rs = callStmt.executeQuery();
+            callStmt.setInt(2, pageNumber);
+            callStmt.setInt(3, pageSize);
+            rs = callStmt.executeQuery();
             while (rs.next()) {
                 Candidate candidate = new Candidate();
                 candidate.setId(rs.getInt("id"));
                 candidate.setName(rs.getString("name"));
                 candidate.setEmail(rs.getString("email"));
+                candidate.setExperience(rs.getInt("experience"));
                 candidate.setGender(Gender.valueOf(rs.getString("gender").toUpperCase()));
                 candidates.add(candidate);
             }
@@ -399,26 +451,35 @@ public class CandidateDaoImp implements CandidateDao {
             System.err.println("Lỗi giá trị enum gender: " + e.getMessage());
             return candidates;
         } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
 
     @Override
-    public List<Candidate> filterByTechnology(String technology) {
+    public List<Candidate> filterByTechnology(String technology, int pageNumber, int pageSize) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         List<Candidate> candidates = new ArrayList<>();
         try {
             conn = ConnectionDB.openConnection();
-            callStmt = conn.prepareCall("{call sp_FilterCandidateByTechnology(?)}");
+            callStmt = conn.prepareCall("{call sp_FilterCandidateByTechnology(?,?,?)}");
             callStmt.setString(1, "%" + technology + "%");
-            ResultSet rs = callStmt.executeQuery();
+            callStmt.setInt(2, pageNumber);
+            callStmt.setInt(3, pageSize);
+            rs = callStmt.executeQuery();
             while (rs.next()) {
                 Candidate candidate = new Candidate();
                 candidate.setId(rs.getInt("id"));
                 candidate.setName(rs.getString("name"));
                 candidate.setEmail(rs.getString("email"));
-                // Giả sử có một trường để lưu công nghệ, nếu không thì bỏ qua
+                candidate.setExperience(rs.getInt("experience"));
+                candidate.setGender(Gender.valueOf(rs.getString("gender").toUpperCase()));
                 candidates.add(candidate);
             }
             return candidates;
@@ -426,6 +487,11 @@ public class CandidateDaoImp implements CandidateDao {
             System.err.println("Lỗi SQL khi lọc ứng viên theo công nghệ: " + e.getMessage());
             return candidates;
         } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
@@ -434,12 +500,13 @@ public class CandidateDaoImp implements CandidateDao {
     public Candidate getCandidateById(Integer userId) {
         Connection conn = null;
         CallableStatement callStmt = null;
+        ResultSet rs = null;
         Candidate candidate = null;
         try {
             conn = ConnectionDB.openConnection();
             callStmt = conn.prepareCall("{call sp_GetCandidateById(?)}");
             callStmt.setInt(1, userId);
-            ResultSet rs = callStmt.executeQuery();
+            rs = callStmt.executeQuery();
             if (rs.next()) {
                 candidate = new Candidate();
                 candidate.setId(rs.getInt("id"));
@@ -461,6 +528,124 @@ public class CandidateDaoImp implements CandidateDao {
         } catch (IllegalArgumentException e) {
             System.err.println("Lỗi giá trị enum gender: " + e.getMessage());
             return null;
+        } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int getTotalCandidatesCount() {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_GetTotalCandidatesCount(?)}");
+            callStmt.registerOutParameter(1, Types.INTEGER);
+            callStmt.execute();
+            return callStmt.getInt(1);
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi đếm tổng số ứng viên: " + e.getMessage());
+            return 0;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int getTotalCandidatesByName(String name) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_GetTotalCandidatesByName(?,?)}");
+            callStmt.setString(1, "%" + name + "%");
+            callStmt.registerOutParameter(2, Types.INTEGER);
+            callStmt.execute();
+            return callStmt.getInt(2);
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi đếm tổng số ứng viên theo tên: " + e.getMessage());
+            return 0;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int getTotalCandidatesByExperience(int experience) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_GetTotalCandidatesByExperience(?,?)}");
+            callStmt.setInt(1, experience);
+            callStmt.registerOutParameter(2, Types.INTEGER);
+            callStmt.execute();
+            return callStmt.getInt(2);
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi đếm tổng số ứng viên theo kinh nghiệm: " + e.getMessage());
+            return 0;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int getTotalCandidatesByAge(int age) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_GetTotalCandidatesByAge(?,?)}");
+            callStmt.setInt(1, age);
+            callStmt.registerOutParameter(2, Types.INTEGER);
+            callStmt.execute();
+            return callStmt.getInt(2);
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi đếm tổng số ứng viên theo tuổi: " + e.getMessage());
+            return 0;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int getTotalCandidatesByGender(String gender) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_GetTotalCandidatesByGender(?,?)}");
+            callStmt.setString(1, gender.toLowerCase());
+            callStmt.registerOutParameter(2, Types.INTEGER);
+            callStmt.execute();
+            return callStmt.getInt(2);
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi đếm tổng số ứng viên theo giới tính: " + e.getMessage());
+            return 0;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int getTotalCandidatesByTechnology(String technology) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            callStmt = conn.prepareCall("{call sp_GetTotalCandidatesByTechnology(?,?)}");
+            callStmt.setString(1, "%" + technology + "%");
+            callStmt.registerOutParameter(2, Types.INTEGER);
+            callStmt.execute();
+            return callStmt.getInt(2);
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi đếm tổng số ứng viên theo công nghệ: " + e.getMessage());
+            return 0;
         } finally {
             ConnectionDB.closeConnection(conn, callStmt);
         }

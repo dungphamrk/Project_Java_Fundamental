@@ -15,4 +15,6 @@ public interface RecruitmentPositionService extends AppService<RecruitmentPositi
     List<Technology> getPositionTechnologies(Integer positionId);
     int addPositionTechnology(Integer positionId, Integer technologyId);
     int removePositionTechnology(Integer positionId, Integer technologyId);
+    int getTotalPositionsCount(); // Thêm để lấy tổng số vị trí
+    int getActivePositionsCount(); // Thêm để lấy tổng số vị trí active
 }

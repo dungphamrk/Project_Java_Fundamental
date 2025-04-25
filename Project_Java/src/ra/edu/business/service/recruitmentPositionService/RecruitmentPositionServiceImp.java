@@ -162,4 +162,14 @@ public class RecruitmentPositionServiceImp implements RecruitmentPositionService
         }
         return recruitmentPositionDao.removePositionTechnology(positionId, technologyId);
     }
+
+    @Override
+    public int getTotalPositionsCount() {
+        return recruitmentPositionDao.getTotalPositionsCount();
+    }
+
+    @Override
+    public int getActivePositionsCount() {
+        return recruitmentPositionDao.getActivePositionsCount();
+    }
 }
