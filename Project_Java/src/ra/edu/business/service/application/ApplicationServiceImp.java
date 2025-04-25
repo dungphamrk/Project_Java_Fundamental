@@ -166,6 +166,10 @@ public class ApplicationServiceImp implements ApplicationService {
         }
     }
 
+    @Override
+    public int cancelAllApplicationById(int userId) {
+        return applicationDao.cancelAllApplicationById(userId);
+    }
 
 
     @Override

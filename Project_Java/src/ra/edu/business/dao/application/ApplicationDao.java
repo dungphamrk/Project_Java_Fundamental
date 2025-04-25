@@ -12,4 +12,5 @@ public interface ApplicationDao extends AppDao<Application, Integer> {
     int cancelApplicationByAdmin(int applicationId, String destroyReason, Progress progress);
     List<Application> findByProgress(Progress progress, int pageNumber, int pageSize);
     Application findById(int id);
+    int cancelAllApplicationById(int userId);
 }

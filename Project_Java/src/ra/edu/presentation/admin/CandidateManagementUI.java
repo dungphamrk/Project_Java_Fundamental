@@ -2,6 +2,7 @@ package ra.edu.presentation.admin;
 
 import ra.edu.business.model.candidate.Candidate;
 import ra.edu.business.model.technology.Technology;
+import ra.edu.business.model.user.Status;
 import ra.edu.business.model.user.User;
 import ra.edu.business.service.candidateService.CandidateService;
 import ra.edu.business.service.candidateService.CandidateServiceImp;
@@ -16,6 +17,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Scanner;
+
+import static ra.edu.presentation.ServiceProvider.applicationService;
 
 public class CandidateManagementUI {
     private static final String EMAIL_SMTP_HOST = "smtp.gmail.com";
@@ -353,6 +356,9 @@ public class CandidateManagementUI {
                 return;
             }
 
+            if(user.getStatus().equals(Status.ACTIVE)) {
+               applicationService.cancelAllApplicationById(user.getId());
+            }
             boolean success = candidateService.lockUnlockAccount(candidateId);
             if (success) {
                 System.out.println(GREEN + "Thay đổi trạng thái tài khoản thành công." + RESET);

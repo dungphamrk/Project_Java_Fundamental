@@ -1578,3 +1578,125 @@ ORDER BY name
     LIMIT pageSize OFFSET offset;
 END //
 DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE sp_FilterRecruitmentPositionsByTechnologies(
+    IN p_techIds VARCHAR(255),
+    IN p_pageNumber INT,
+    IN p_pageSize INT
+)
+BEGIN
+    DECLARE offset INT;
+    SET offset = (p_pageNumber - 1) * p_pageSize;
+
+    -- Tạo bảng tạm để lưu danh sách ID công nghệ
+    DROP TEMPORARY TABLE IF EXISTS temp_tech_ids;
+    CREATE TEMPORARY TABLE temp_tech_ids (tech_id INT);
+
+    -- Chuyển chuỗi p_techIds thành các bản ghi trong bảng tạm
+    WHILE p_techIds != '' DO
+            SET @comma_pos = LOCATE(',', p_techIds);
+            IF @comma_pos > 0 THEN
+                INSERT INTO temp_tech_ids (tech_id) VALUES (SUBSTRING(p_techIds, 1, @comma_pos - 1));
+                SET p_techIds = SUBSTRING(p_techIds, @comma_pos + 1);
+ELSE
+                INSERT INTO temp_tech_ids (tech_id) VALUES (p_techIds);
+                SET p_techIds = '';
+END IF;
+END WHILE;
+
+    -- Lọc các vị trí tuyển dụng có tất cả công nghệ trong danh sách
+SELECT DISTINCT rp.*
+FROM recruitment_position rp
+         INNER JOIN recruitment_position_technology rpt ON rp.id = rpt.recruitmentPositionId
+WHERE rp.status = 'ACTIVE'
+  AND rpt.technologyId IN (SELECT tech_id FROM temp_tech_ids)
+GROUP BY rp.id
+HAVING COUNT(DISTINCT rpt.technologyId) = (SELECT COUNT(*) FROM temp_tech_ids)
+ORDER BY rp.id
+    LIMIT p_pageSize OFFSET offset;
+
+-- Xóa bảng tạm
+DROP TEMPORARY TABLE IF EXISTS temp_tech_ids;
+END //
+
+CREATE PROCEDURE sp_GetFilteredPositionsCountByTechnologies(
+    IN p_techIds VARCHAR(255),
+    OUT p_count INT
+)
+BEGIN
+    -- Tạo bảng tạm để lưu danh sách ID công nghệ
+    DROP TEMPORARY TABLE IF EXISTS temp_tech_ids;
+    CREATE TEMPORARY TABLE temp_tech_ids (tech_id INT);
+
+    -- Chuyển chuỗi p_techIds thành các bản ghi trong bảng tạm
+    WHILE p_techIds != '' DO
+            SET @comma_pos = LOCATE(',', p_techIds);
+            IF @comma_pos > 0 THEN
+                INSERT INTO temp_tech_ids (tech_id) VALUES (SUBSTRING(p_techIds, 1, @comma_pos - 1));
+                SET p_techIds = SUBSTRING(p_techIds, @comma_pos + 1);
+ELSE
+                INSERT INTO temp_tech_ids (tech_id) VALUES (p_techIds);
+                SET p_techIds = '';
+END IF;
+END WHILE;
+
+    -- Đếm số vị trí tuyển dụng có tất cả công nghệ trong danh sách
+SELECT COUNT(DISTINCT rp.id) INTO p_count
+FROM recruitment_position rp
+         INNER JOIN recruitment_position_technology rpt ON rp.id = rpt.recruitmentPositionId
+WHERE rp.status = 'ACTIVE'
+  AND rpt.technologyId IN (SELECT tech_id FROM temp_tech_ids)
+GROUP BY rp.id
+HAVING COUNT(DISTINCT rpt.technologyId) = (SELECT COUNT(*) FROM temp_tech_ids);
+
+-- Xóa bảng tạm
+DROP TEMPORARY TABLE IF EXISTS temp_tech_ids;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE sp_CancelAllApplicationsByUserId(
+    IN p_userId INT,
+    IN p_destroyReason VARCHAR(255),
+    OUT p_returnCode INT
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+BEGIN
+            SET p_returnCode = 1; -- Lỗi SQL
+ROLLBACK;
+END;
+
+    -- Kiểm tra p_userId hợp lệ
+    IF p_userId <= 0 THEN
+        SET p_returnCode = 2; -- userId không hợp lệ
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid userId';
+END IF;
+
+    -- Kiểm tra p_destroyReason hợp lệ
+    IF p_destroyReason IS NULL OR TRIM(p_destroyReason) = '' THEN
+        SET p_returnCode = 3; -- destroyReason không hợp lệ
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'destroyReason cannot be empty';
+END IF;
+
+START TRANSACTION;
+
+-- Cập nhật tất cả đơn ứng tuyển của userId
+UPDATE application
+SET
+    progress = 'CANCELED',
+    destroyReason = p_destroyReason,
+    destroyAt = NOW(),
+    updateAt = NOW()
+WHERE candidateId = p_userId
+  AND progress != 'CANCELED'; -- Chỉ cập nhật các đơn chưa bị hủy
+
+SET p_returnCode = 0; -- Thành công
+COMMIT;
+END //
+
+DELIMITER ;

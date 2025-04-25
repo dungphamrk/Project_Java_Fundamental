@@ -17,4 +17,5 @@ public interface ApplicationService extends AppService<Application, Integer> {
     int updateInterviewDetails(int applicationId, String interviewLink, LocalDateTime interviewTime);
     int updateInterviewResult(int applicationId, String interviewResult, String interviewResultNote, String progress);
     Application findById(int id);
+    int cancelAllApplicationById(int userId);
 }

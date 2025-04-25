@@ -187,6 +187,48 @@ public class ApplicationDaoImp implements ApplicationDao {
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
+    @Override
+    public int cancelAllApplicationById(int userId) {
+        if (userId <= 0) {
+            throw new IllegalArgumentException("userId must be positive");
+        }
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            conn.setAutoCommit(false);
+            callStmt = conn.prepareCall("{call sp_CancelAllApplicationsByUserId(?,?,?)}");
+            callStmt.setInt(1, userId);
+            callStmt.setString(2, "User account deleted");
+            callStmt.registerOutParameter(3, Types.INTEGER);
+            callStmt.execute();
+            int returnCode = callStmt.getInt(3);
+            if (returnCode == 0) {
+                conn.commit();
+            } else {
+                conn.rollback();
+            }
+            return returnCode;
+        } catch (SQLException e) {
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi rollback: " + ex.getMessage());
+            }
+            throw new RuntimeException("Lỗi khi hủy tất cả đơn ứng tuyển: " + e.getMessage(), e);
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                System.err.println("Lỗi khi khôi phục auto-commit: " + ex.getMessage());
+            }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
 
     @Override
     public List<Application> findAll(int pageNumber, int pageSize) {
