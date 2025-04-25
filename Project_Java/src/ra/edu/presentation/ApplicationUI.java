@@ -82,10 +82,10 @@ public class ApplicationUI {
                 System.out.println("=============================================" + RESET);
                 System.out.println("Trang " + pageNumber + " - Số phần tử trên trang: " + pageSize);
                 System.out.println(YELLOW + "+--------+------------+--------------------------------+-------------+");
-                System.out.println("| ID đơn | Vị trí ID  | URL CV                         | Trạng thái  |");
+                System.out.println("| ID  | ID vị trí công việc  | URL CV                         | Trạng thái  |");
                 System.out.println("+--------+------------+--------------------------------+-------------+" + RESET);
                 for (Application app : applications) {
-                    System.out.printf(WHITE + "| %-6d | %-10d | %-30s | %-11s |%n",
+                    System.out.printf(WHITE + "| %-6d | %-15d | %-40s | %-11s |%n",
                             app.getId(), app.getRecruitmentPositionId(),
                             app.getCvUrl().length() > 30 ? app.getCvUrl().substring(0, 27) + "..." : app.getCvUrl(),
                             app.getProgress());

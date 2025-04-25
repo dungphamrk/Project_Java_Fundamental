@@ -172,4 +172,24 @@ public class RecruitmentPositionServiceImp implements RecruitmentPositionService
     public int getActivePositionsCount() {
         return recruitmentPositionDao.getActivePositionsCount();
     }
+
+    @Override
+    public List<RecruitmentPosition> getFilteredPositionsByTechnologies(List<Integer> technologyIds, int pageNumber, int pageSize) {
+        if (technologyIds == null || technologyIds.isEmpty() || pageNumber < 1 || pageSize < 1) {
+            return List.of();
+        }
+        List<RecruitmentPosition> positions = recruitmentPositionDao.getFilteredPositionsByTechnologies(technologyIds, pageNumber, pageSize);
+        for (RecruitmentPosition position : positions) {
+            position.setTechnologies(recruitmentPositionDao.getPositionTechnologies(position.getId()));
+        }
+        return positions;
+    }
+
+    @Override
+    public int getFilteredPositionsCountByTechnologies(List<Integer> technologyIds) {
+        if (technologyIds == null || technologyIds.isEmpty()) {
+            return 0;
+        }
+        return recruitmentPositionDao.getFilteredPositionsCountByTechnologies(technologyIds);
+    }
 }

@@ -9,6 +9,7 @@ import ra.edu.business.service.application.ApplicationService;
 import ra.edu.business.service.application.ApplicationServiceImp;
 import ra.edu.business.service.recruitmentPositionService.RecruitmentPositionService;
 import ra.edu.business.service.recruitmentPositionService.RecruitmentPositionServiceImp;
+import ra.edu.business.service.technology.TechnologyService;
 import ra.edu.validate.Validator;
 
 import java.time.LocalDate;
@@ -77,7 +78,8 @@ public class RecruitmentPositionUI {
             System.out.println("=============================================" + RESET);
             System.out.println(CYAN + "1. Xem danh sách vị trí công việc đang tuyển");
             System.out.println("2. Quản lý đơn ứng tuyển của bạn");
-            System.out.println("3. Quay lại" + RESET);
+            System.out.println("3. Lọc vị trí theo công nghệ"); // Thêm mục mới
+            System.out.println("4. Quay lại" + RESET);
             System.out.print(MAGENTA + "Lựa chọn của bạn: " + RESET);
             try {
                 int choice = Validator.validateChoice(scanner);
@@ -89,18 +91,20 @@ public class RecruitmentPositionUI {
                         ApplicationUI.displayCandidateApplicationMenu(scanner);
                         break;
                     case 3:
+                        filterJobsByTechnologies(scanner); // Gọi phương thức mới
+                        break;
+                    case 4:
                         return;
                     default:
-                        System.out.println(RED + "Vui lòng chọn từ 1-3" + RESET);
+                        System.out.println(RED + "Vui lòng chọn từ 1-4" + RESET);
                 }
             } catch (NumberFormatException e) {
-                System.out.println(RED + "Vui lòng nhập số từ 1-3" + RESET);
+                System.out.println(RED + "Vui lòng nhập số từ 1-4" + RESET);
             }
             System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
             scanner.nextLine();
         } while (true);
     }
-
     private static void displayRecruitmentPositionList(Scanner scanner) {
         int pageNumber = 1;
         int pageSize = 5;
@@ -598,5 +602,69 @@ public class RecruitmentPositionUI {
             default:
                 return "Lỗi không xác định";
         }
+    }
+
+    private static void filterJobsByTechnologies(Scanner scanner) {
+        int pageNumber = 1;
+        int pageSize = 10;
+
+        // Lấy danh sách công nghệ đang hoạt động
+        TechnologyService.TechnologyPage techPage = technologyService.findActiveTechnologiesWithCount(pageNumber, pageSize);
+        List<Technology> technologies = techPage.getTechnologies();
+        int totalTechRecords = techPage.getTotalRecords();
+
+        if (technologies.isEmpty()) {
+            System.out.println(RED + "Không có công nghệ nào đang hoạt động để lọc." + RESET);
+            return;
+        }
+
+        // Hiển thị danh sách công nghệ
+        System.out.println(MAGENTA + "=== DANH SÁCH CÔNG NGHỆ ĐANG HOẠT ĐỘNG ===" + RESET);
+        System.out.println(YELLOW + "+-----+--------------------+" + RESET);
+        System.out.println("| ID  | Tên công nghệ      |" + RESET);
+        System.out.println(YELLOW + "+-----+--------------------+" + RESET);
+        for (Technology tech : technologies) {
+            System.out.printf(WHITE + "| %-3d | %-18s |%n",
+                    tech.getId(), tech.getName().length() > 18 ? tech.getName().substring(0, 15) + "..." : tech.getName());
+        }
+        System.out.println(YELLOW + "+-----+--------------------+" + RESET);
+
+        // Cho phép người dùng chọn nhiều công nghệ
+        List<Integer> selectedTechIds = new ArrayList<>();
+        System.out.println(MAGENTA + "Nhập ID công nghệ để lọc (nhập 0 để kết thúc):" + RESET);
+        while (true) {
+            System.out.print(WHITE + "ID công nghệ: " + RESET);
+            try {
+                int techId = Integer.parseInt(scanner.nextLine());
+                if (techId == 0) {
+                    break;
+                }
+                if (technologies.stream().noneMatch(tech -> tech.getId() == techId)) {
+                    System.out.println(RED + "ID công nghệ không hợp lệ!" + RESET);
+                    continue;
+                }
+                if (selectedTechIds.contains(techId)) {
+                    System.out.println(RED + "Công nghệ này đã được chọn!" + RESET);
+                    continue;
+                }
+                selectedTechIds.add(techId);
+                System.out.println(GREEN + "Đã chọn công nghệ ID: " + techId + RESET);
+            } catch (NumberFormatException e) {
+                System.out.println(RED + "Vui lòng nhập số hợp lệ!" + RESET);
+            }
+        }
+
+        if (selectedTechIds.isEmpty()) {
+            System.out.println(RED + "Bạn chưa chọn công nghệ nào để lọc." + RESET);
+            return;
+        }
+
+        // Lọc các vị trí tuyển dụng dựa trên danh sách công nghệ đã chọn
+        int totalRecords = recruitmentPositionService.getFilteredPositionsCountByTechnologies(selectedTechIds);
+        List<RecruitmentPosition> filteredPositions = recruitmentPositionService.getFilteredPositionsByTechnologies(
+                selectedTechIds, pageNumber, pageSize);
+
+        // Hiển thị kết quả với phân trang
+        displayPaginationMenu(scanner, pageNumber, pageSize, totalRecords, filteredPositions, true);
     }
 }

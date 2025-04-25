@@ -161,22 +161,15 @@ public class UserDaoImp implements UserDao {
             conn.setAutoCommit(false);
             callStmt = conn.prepareCall("{call sp_GetUserById(?,?)}");
             callStmt.setInt(1, id);
-            callStmt.registerOutParameter(2, Types.INTEGER); // returnCode
             rs = callStmt.executeQuery();
-            int returnCode = callStmt.getInt(2);
-
-            if (returnCode == 0 && rs.next()) {
+            if (rs.next()) {
                 user = new User();
                 user.setId(rs.getInt("id"));
                 user.setUsername(rs.getString("username"));
-                user.setPassword(rs.getString("password")); // Lưu ý: Có thể không cần lấy password
-                // Thêm các trường khác nếu cần, ví dụ:
-                // user.setEmail(rs.getString("email"));
-                // user.setRole(rs.getString("role"));
+                user.setPassword(rs.getString("password"));
             } else {
                 System.out.println("Không tìm thấy người dùng với ID: " + id);
             }
-
             conn.commit();
         } catch (SQLException e) {
             System.err.println("Lỗi SQL khi lấy người dùng: " + e.getMessage());

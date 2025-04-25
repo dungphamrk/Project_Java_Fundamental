@@ -418,4 +418,71 @@ public class RecruitmentPositionDaoImp implements RecruitmentPositionDao {
             ConnectionDB.closeConnection(conn, callStmt);
         }
     }
+
+    @Override
+    public List<RecruitmentPosition> getFilteredPositionsByTechnologies(List<Integer> technologyIds, int pageNumber, int pageSize) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        ResultSet rs = null;
+        List<RecruitmentPosition> positions = new ArrayList<>();
+        try {
+            conn = ConnectionDB.openConnection();
+            // Tạo danh sách ID công nghệ dưới dạng chuỗi
+            String techIds = String.join(",", technologyIds.stream().map(String::valueOf).toList());
+            callStmt = conn.prepareCall("{call sp_FilterRecruitmentPositionsByTechnologies(?,?,?)}");
+            callStmt.setString(1, techIds);
+            callStmt.setInt(2, pageNumber);
+            callStmt.setInt(3, pageSize);
+            rs = callStmt.executeQuery();
+            while (rs.next()) {
+                RecruitmentPosition position = new RecruitmentPosition();
+                position.setId(rs.getInt("id"));
+                position.setName(rs.getString("name"));
+                position.setDescription(rs.getString("description"));
+                position.setMinSalary(rs.getDouble("minSalary"));
+                position.setMaxSalary(rs.getDouble("maxSalary"));
+                position.setMinExperience(rs.getInt("minExperience"));
+                LocalDate createdDate = rs.getTimestamp("createdDate") != null ?
+                        rs.getTimestamp("createdDate").toLocalDateTime().toLocalDate() : null;
+                LocalDate expiredDate = rs.getTimestamp("expiredDate") != null ?
+                        rs.getTimestamp("expiredDate").toLocalDateTime().toLocalDate() : null;
+                position.setCreatedDate(createdDate);
+                position.setExpiredDate(expiredDate);
+                position.setStatus(Status.valueOf(rs.getString("status").toLowerCase()));
+                position.setTechnologies(getPositionTechnologies(position.getId()));
+                positions.add(position);
+            }
+            return positions;
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi lọc vị trí tuyển dụng theo công nghệ: " + e.getMessage());
+            return positions;
+        } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                System.err.println("Lỗi khi đóng ResultSet: " + e.getMessage());
+            }
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
+
+    @Override
+    public int getFilteredPositionsCountByTechnologies(List<Integer> technologyIds) {
+        Connection conn = null;
+        CallableStatement callStmt = null;
+        try {
+            conn = ConnectionDB.openConnection();
+            String techIds = String.join(",", technologyIds.stream().map(String::valueOf).toList());
+            callStmt = conn.prepareCall("{call sp_GetFilteredPositionsCountByTechnologies(?,?)}");
+            callStmt.setString(1, techIds);
+            callStmt.registerOutParameter(2, Types.INTEGER);
+            callStmt.execute();
+            return callStmt.getInt(2);
+        } catch (SQLException e) {
+            System.err.println("Lỗi SQL khi đếm số vị trí tuyển dụng theo công nghệ: " + e.getMessage());
+            return 0;
+        } finally {
+            ConnectionDB.closeConnection(conn, callStmt);
+        }
+    }
 }
