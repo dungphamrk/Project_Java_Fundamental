@@ -77,20 +77,30 @@ public class ApplicationUI {
                     return;
                 }
 
-                System.out.println(MAGENTA + "=============================================");
-                System.out.println("       DANH SÁCH ĐƠN ỨNG TUYỂN             ");
-                System.out.println("=============================================" + RESET);
+                System.out.println(MAGENTA + "==========================================================================================================================");
+                System.out.println("                                               DANH SÁCH ĐƠN ỨNG TUYỂN                                                    ");
+                System.out.println("==========================================================================================================================" + RESET);
                 System.out.println("Trang " + pageNumber + " - Số phần tử trên trang: " + pageSize);
-                System.out.println(YELLOW + "+--------+------------+--------------------------------+-------------+");
-                System.out.println("| ID  | ID vị trí công việc  | URL CV                         | Trạng thái  |");
-                System.out.println("+--------+------------+--------------------------------+-------------+" + RESET);
+                System.out.println(YELLOW + "+-----+------------+----------------+------------------------------+--------------+---------------------+------------------------------+---------------------+------------+------------------------+");
+                System.out.println("| ID  | Ứng viên   | Vị trí tuyển   | URL CV                       | Trạng thái   | Ngày cập nhật       | Link phỏng vấn               | Thời gian phỏng vấn | Kết quả    | Lý do hủy              |");
+                System.out.println("+-----+------------+----------------+------------------------------+--------------+---------------------+------------------------------+---------------------+------------+------------------------+" + RESET);
                 for (Application app : applications) {
-                    System.out.printf(WHITE + "| %-6d | %-15d | %-40s | %-11s |%n",
-                            app.getId(), app.getRecruitmentPositionId(),
-                            app.getCvUrl().length() > 30 ? app.getCvUrl().substring(0, 27) + "..." : app.getCvUrl(),
-                            app.getProgress());
+                    System.out.printf(WHITE + "| %-3d | %-10d | %-14d | %-28s | %-12s | %-19s | %-28s | %-19s | %-10s | %-22s |%n",
+                            app.getId(),
+                            app.getCandidateId(),
+                            app.getRecruitmentPositionId(),
+                            app.getCvUrl().length() > 28 ? app.getCvUrl().substring(0, 25) + "..." : app.getCvUrl(),
+                            app.getProgress() != null ? app.getProgress() : "N/A",
+                            app.getUpdateAt() != null ? app.getUpdateAt().toString() : "N/A",
+                            app.getInterviewLink() != null ? (app.getInterviewLink().length() > 28 ? app.getInterviewLink().substring(0, 25) + "..." : app.getInterviewLink()) : "Chưa có",
+                            app.getInterviewTime() != null ? app.getInterviewTime().toString() : "Chưa có",
+                            app.getInterviewResult() != null ? app.getInterviewResult() : "Chưa có",
+                            app.getDestroyReason() != null ? (app.getDestroyReason().length() > 20 ? app.getDestroyReason().substring(0, 18) + "..." : app.getDestroyReason()) : "Không"
+                    );
+
                 }
-                System.out.println(YELLOW + "+--------+------------+--------------------------------+-------------+" + RESET);
+
+                System.out.println(YELLOW + "+-----+------------+----------------+------------------------------+--------------+---------------------+------------------------------+---------------------+------------+------------------------+");
 
                 System.out.println(MAGENTA + "=== TÙY CHỌN ===" + RESET);
                 System.out.println(CYAN + "1. Trang tiếp theo");
@@ -131,6 +141,8 @@ public class ApplicationUI {
             }
         }
     }
+
+
 
     public static void cancelApplication(Scanner scanner) {
         System.out.println(MAGENTA + "=== HỦY ĐƠN ỨNG TUYỂN ===" + RESET);

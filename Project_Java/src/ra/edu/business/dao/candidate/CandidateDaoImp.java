@@ -231,7 +231,7 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public int resetPassword(Integer userId, String newPassword) {
+    public int resetPassword(int userId, String newPassword) {
         Connection conn = null;
         CallableStatement callStmt = null;
         int returnCode = -1;
@@ -273,7 +273,7 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public boolean lockUnlockAccount(Integer candidateId) {
+    public boolean lockUnlockAccount(int candidateId) {
         Connection conn = null;
         CallableStatement callStmt = null;
         try {
@@ -497,7 +497,7 @@ public class CandidateDaoImp implements CandidateDao {
     }
 
     @Override
-    public Candidate getCandidateById(Integer userId) {
+    public Candidate getCandidateById(int userId) {
         Connection conn = null;
         CallableStatement callStmt = null;
         ResultSet rs = null;

@@ -13,6 +13,9 @@ import ra.edu.presentation.ServiceProvider;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
 import java.util.Random;
@@ -118,8 +121,7 @@ public class CandidateManagementUI {
             displayPaginationMenu(scanner, pageNumber, pageSize, totalRecords, candidates, "KẾT QUẢ LỌC (Kinh nghiệm: " + experience + " năm)");
         } catch (NumberFormatException e) {
             System.out.println(RED + "Vui lòng nhập số hợp lệ!" + RESET);
-            System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-            scanner.nextLine();
+
         }
     }
 
@@ -133,8 +135,7 @@ public class CandidateManagementUI {
             String gender = choice == 1 ? "MALE" : choice == 2 ? "FEMALE" : null;
             if (gender == null) {
                 System.out.println(RED + "Vui lòng chọn 1 hoặc 2!" + RESET);
-                System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-                scanner.nextLine();
+
                 return;
             }
             int pageNumber = 1;
@@ -144,21 +145,19 @@ public class CandidateManagementUI {
             displayPaginationMenu(scanner, pageNumber, pageSize, totalRecords, candidates, "KẾT QUẢ LỌC (Giới tính: " + gender + ")");
         } catch (NumberFormatException e) {
             System.out.println(RED + "Vui lòng nhập số hợp lệ!" + RESET);
-            System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-            scanner.nextLine();
+
         }
     }
 
     private static void filterCandidatesByTechnology(Scanner scanner) {
         System.out.println(MAGENTA + "=== LỌC ỨNG VIÊN THEO CÔNG NGHỆ ===" + RESET);
-        System.out.print(WHITE + "Nhập ID công nghệ: " + RESET);
+        System.out.print(WHITE + "Nhập ID công nghệ để tìm kiếm: " + RESET);
         try {
             int technologyId = Integer.parseInt(scanner.nextLine());
             Technology technology = technologyService.findById(technologyId);
             if (technology == null) {
                 System.out.println(RED + "Không tìm thấy công nghệ với ID: " + technologyId + RESET);
-                System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-                scanner.nextLine();
+
                 return;
             }
             int pageNumber = 1;
@@ -168,8 +167,7 @@ public class CandidateManagementUI {
             displayPaginationMenu(scanner, pageNumber, pageSize, totalRecords, candidates, "KẾT QUẢ LỌC (Công nghệ: " + technology.getName() + ")");
         } catch (NumberFormatException e) {
             System.out.println(RED + "Vui lòng nhập ID là một số!" + RESET);
-            System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-            scanner.nextLine();
+
         }
     }
 
@@ -306,9 +304,9 @@ public class CandidateManagementUI {
         if (candidates == null || candidates.isEmpty()) {
             System.out.println(RED + "Không có ứng viên nào để hiển thị." + RESET);
         } else {
-            System.out.println(YELLOW + "+-----+--------------------+-------------------------+-------------+--------+" + RESET);
-            System.out.println("| ID  | Tên                | Email                   | Kinh nghiệm | Giới tính |");
-            System.out.println(YELLOW + "+-----+--------------------+-------------------------+-------------+--------+" + RESET);
+            System.out.println(YELLOW + "+-----+--------------------+-------------------------+-------------+------------+" + RESET);
+            System.out.println("| ID  | Tên                | Email                   | Kinh nghiệm | Giới tính  |");
+            System.out.println(YELLOW + "+-----+--------------------+-------------------------+-------------+------------+" + RESET);
             for (Candidate candidate : candidates) {
                 System.out.printf(WHITE + "| %-3d | %-18s | %-23s | %-11d | %-10s |%n",
                         candidate.getId(),
@@ -317,7 +315,7 @@ public class CandidateManagementUI {
                         candidate.getExperience(),
                         candidate.getGender());
             }
-            System.out.println(YELLOW + "+-----+--------------------+-------------------------+-------------+--------+" + RESET);
+            System.out.println(YELLOW + "+-----+--------------------+-------------------------+-------------+------------+" + RESET);
         }
     }
 
@@ -330,8 +328,7 @@ public class CandidateManagementUI {
 
             if (candidate == null || user == null) {
                 System.out.println(RED + "Không tìm thấy ứng viên hoặc thông tin người dùng với ID: " + candidateId + RESET);
-                System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-                scanner.nextLine();
+
                 return;
             }
 
@@ -339,7 +336,7 @@ public class CandidateManagementUI {
             System.out.println("       THÔNG TIN ỨNG VIÊN                  ");
             System.out.println("=============================================" + RESET);
             System.out.println(YELLOW + "+-----+--------------------+-----------------+" + RESET);
-            System.out.println("| ID  | Tên tài khoản      | Trạng thái      |");
+            System.out.println("| ID  | Tên tài khoản      |  ạng thái      |");
             System.out.println(YELLOW + "+-----+--------------------+-----------------+" + RESET);
             System.out.printf(WHITE + "| %-3d | %-18s | %-15s |%n",
                     candidate.getId(),
@@ -351,8 +348,6 @@ public class CandidateManagementUI {
             String confirmation = scanner.nextLine().trim().toUpperCase();
             if (!confirmation.equals("Y")) {
                 System.out.println(CYAN + "Hủy thao tác khóa/mở khóa." + RESET);
-                System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-                scanner.nextLine();
                 return;
             }
 
@@ -368,8 +363,6 @@ public class CandidateManagementUI {
         } catch (NumberFormatException e) {
             System.out.println(RED + "ID ứng viên phải là số nguyên." + RESET);
         }
-        System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-        scanner.nextLine();
     }
 
     private static void resetCandidatePassword(Scanner scanner) {
@@ -378,36 +371,46 @@ public class CandidateManagementUI {
         try {
             int candidateId = Integer.parseInt(scanner.nextLine());
             Candidate candidate = candidateService.getCandidateById(candidateId);
-            if (candidate == null) {
+            User user = ServiceProvider.userService.getUserById(candidateId);
+            if (candidate == null || user == null) {
                 System.out.println(RED + "Không tìm thấy ứng viên với ID: " + candidateId + RESET);
+                return;
+            }
+            String email = candidate.getEmail();
+            String username = user.getUsername();
+            String otp = generateOtp();
+            if (!sendOtpEmail(email, otp)) {
+                System.out.println(RED + "Gửi OTP thất bại. Vui lòng thử lại sau." + RESET);
             } else {
-                String email = candidate.getEmail();
-                String otp = generateOtp();
-                if (!sendOtpEmail(email, otp)) {
-                    System.out.println(RED + "Gửi OTP thất bại. Vui lòng thử lại sau." + RESET);
-                } else {
-                    System.out.print(WHITE + "Nhập mã OTP được gửi đến " + email + ": " + RESET);
-                    String enteredOtp = scanner.nextLine().trim();
-                    if (otp.equals(enteredOtp)) {
-                        System.out.print(WHITE + "Nhập mật khẩu mới: " + RESET);
-                        String newPassword = scanner.nextLine();
-                        int result = candidateService.resetPassword(candidateId, newPassword);
-                        if (result == 0) {
-                            System.out.println(GREEN + "Reset mật khẩu thành công!" + RESET);
-                        } else {
-                            System.out.println(RED + "Reset mật khẩu thất bại! Vui lòng kiểm tra mật khẩu." + RESET);
-                        }
-                    } else {
-                        System.out.println(RED + "Mã OTP không đúng." + RESET);
-                    }
-                }
+                // Ghi thông tin OTP vào file
+                writeResetInfoToFile(username, email, otp);
+                // Cập nhật trạng thái người dùng thành HANDLING
+                user.setStatus(Status.HANDLING);
+                candidateService.lockUnlockAccount(candidateId); // Giả sử phương thức này cập nhật trạng thái
+                System.out.println(GREEN + "OTP đã được gửi đến " + email + ". Người dùng đã được chuyển sang trạng thái HANDLING." + RESET);
             }
         } catch (NumberFormatException e) {
             System.out.println(RED + "Vui lòng nhập ID là một số!" + RESET);
         }
-        System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-        scanner.nextLine();
     }
+
+    private static void writeResetInfoToFile(String username, String email, String otp) {
+        String filePath = "reset_password_info.txt";
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
+            writer.write("username=" + username);
+            writer.newLine();
+            writer.write("email=" + email);
+            writer.newLine();
+            writer.write("otp=" + otp);
+            writer.newLine();
+            writer.write("---"); // Dấu phân cách giữa các bản ghi
+            writer.newLine();
+            System.out.println(GREEN + "Đã ghi thông tin OTP vào " + filePath + RESET);
+        } catch (IOException e) {
+            System.err.println(RED + "Lỗi khi ghi file OTP: " + e.getMessage() + RESET);
+        }
+    }
+
 
     private static String generateOtp() {
         Random random = new Random();

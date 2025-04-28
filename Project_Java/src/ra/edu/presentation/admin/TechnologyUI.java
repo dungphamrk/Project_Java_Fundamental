@@ -32,7 +32,6 @@ public class TechnologyUI {
             System.out.println("5. Cập nhật công nghệ");
             System.out.println("6. Xóa công nghệ");
             System.out.println("7. Quay lại" + RESET);
-            System.out.print(MAGENTA + "Lựa chọn của bạn: " + RESET);
             try {
                 int choice = Validator.validateChoice(scanner);
                 switch (choice) {
@@ -218,8 +217,6 @@ public class TechnologyUI {
         } catch (NumberFormatException e) {
             System.out.println(RED + "Vui lòng nhập ID là một số!" + RESET);
         }
-        System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-        scanner.nextLine();
     }
 
     private static void addTechnology(Scanner scanner) {
@@ -232,8 +229,6 @@ public class TechnologyUI {
         } else {
             System.out.println(RED + "Thêm công nghệ thất bại!" + RESET);
         }
-        System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-        scanner.nextLine();
     }
 
     private static void updateTechnology(Scanner scanner) {
@@ -284,8 +279,6 @@ public class TechnologyUI {
         } catch (NumberFormatException e) {
             System.out.println(RED + "Vui lòng nhập ID hoặc lựa chọn là một số!" + RESET);
         }
-        System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-        scanner.nextLine();
     }
 
     private static void deleteTechnology(Scanner scanner) {

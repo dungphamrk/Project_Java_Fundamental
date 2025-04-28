@@ -13,6 +13,7 @@ import ra.edu.business.service.technology.TechnologyService;
 import ra.edu.validate.Validator;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -42,7 +43,6 @@ public class RecruitmentPositionUI {
             System.out.println("3. Cập nhật vị trí tuyển dụng");
             System.out.println("4. Xóa vị trí tuyển dụng");
             System.out.println("5. Quay lại" + RESET);
-            System.out.print(MAGENTA + "Lựa chọn của bạn: " + RESET);
             try {
                 int choice = Validator.validateChoice(scanner);
                 switch (choice) {
@@ -80,7 +80,6 @@ public class RecruitmentPositionUI {
             System.out.println("2. Quản lý đơn ứng tuyển của bạn");
             System.out.println("3. Lọc vị trí theo công nghệ"); // Thêm mục mới
             System.out.println("4. Quay lại" + RESET);
-            System.out.print(MAGENTA + "Lựa chọn của bạn: " + RESET);
             try {
                 int choice = Validator.validateChoice(scanner);
                 switch (choice) {
@@ -125,6 +124,9 @@ public class RecruitmentPositionUI {
         int totalPages = (int) Math.ceil((double) totalRecords / pageSize);
         do {
             printPositionTable(positions, isCandidate);
+            if (totalPages==0){
+                return;
+            }
             System.out.println(YELLOW + "Trang: " + currentPage + "/" + totalPages + " | Số phần tử trên trang: " + pageSize + RESET);
             System.out.println(MAGENTA + "=== MENU PHÂN TRANG ===");
             System.out.println("1. Trang trước");
@@ -137,7 +139,6 @@ public class RecruitmentPositionUI {
             } else {
                 System.out.println("5. Quay lại");
             }
-            System.out.print(MAGENTA + "Lựa chọn của bạn: " + RESET);
             try {
                 int choice = Validator.validateChoice(scanner);
                 if (isCandidate) {
@@ -268,36 +269,26 @@ public class RecruitmentPositionUI {
         if (positions == null || positions.isEmpty()) {
             System.out.println(RED + (isCandidate ? "Không có vị trí công việc nào đang tuyển." : "Không có vị trí tuyển dụng nào để hiển thị.") + RESET);
         } else {
-            if (isCandidate) {
-                System.out.println(YELLOW + "+-----+--------------------+--------------------+-------------+-------------+" + RESET);
-                System.out.println("| ID  | Tên vị trí         | Mô tả              | Lương tối đa| Kinh nghiệm |");
-                System.out.println("+-----+--------------------+--------------------+-------------+-------------+" + RESET);
-                for (RecruitmentPosition position : positions) {
-                    System.out.printf(WHITE + "| %-3d | %-18s | %-18s | %-11.0f | %-11d |%n",
-                            position.getId(),
-                            position.getName().length() > 18 ? position.getName().substring(0, 15) + "..." : position.getName(),
-                            position.getDescription().length() > 18 ? position.getDescription().substring(0, 15) + "..." : position.getDescription(),
-                            position.getMaxSalary(),
-                            position.getMinExperience());
-                }
-                System.out.println(YELLOW + "+-----+--------------------+--------------------+-------------+-------------+" + RESET);
-            } else {
-                System.out.println(YELLOW + "+-----+--------------------+--------------------+-------------+-------------+--------+" + RESET);
-                System.out.println("| ID  | Tên vị trí         | Mô tả              | Lương tối đa| Kinh nghiệm | Trạng thái |");
-                System.out.println("+-----+--------------------+--------------------+-------------+-------------+--------+" + RESET);
-                for (RecruitmentPosition position : positions) {
-                    System.out.printf(WHITE + "| %-3d | %-18s | %-18s | %-11.0f | %-11d | %-10s |%n",
-                            position.getId(),
-                            position.getName().length() > 18 ? position.getName().substring(0, 15) + "..." : position.getName(),
-                            position.getDescription().length() > 18 ? position.getDescription().substring(0, 15) + "..." : position.getDescription(),
-                            position.getMaxSalary(),
-                            position.getMinExperience(),
-                            position.getStatus());
-                }
-                System.out.println(YELLOW + "+-----+--------------------+--------------------+-------------+-------------+--------+" + RESET);
+            System.out.println(YELLOW + "+-----+------------------------+-------------------------------------------------------------------+-----------------+--------------+-------------+-------------+" + RESET);
+            System.out.println("| ID  | Tên vị trí             | Mô tả                                                             | Lương tối thiểu | Lương tối đa | Kinh nghiệm | Hạn nộp      |" + RESET);
+            System.out.println("+-----+------------------------+-------------------------------------------------------------------+-----------------+--------------+-------------+-------------+" + RESET);
+
+            for (RecruitmentPosition position : positions) {
+                System.out.printf(WHITE + "| %-3d | %-22s | %-65s | %-15.0f | %-12.0f | %-11d | %-11s |%n",
+                        position.getId(),
+                        position.getName().length() > 25 ? position.getName().substring(0, 22) + "..." : position.getName(),
+                        position.getDescription().length() > 65 ? position.getDescription().substring(0, 62) + "..." : position.getDescription(),
+                        position.getMinSalary(),
+                        position.getMaxSalary(),
+                        position.getMinExperience(),
+                        position.getExpiredDate() != null ? position.getExpiredDate().toString() : "N/A"
+                );
             }
+
+            System.out.println(YELLOW + "+-----+------------------------+-------------------------------------------------------------------+-----------------+--------------+-------------+-------------+" + RESET);
         }
     }
+
 
     private static void addRecruitmentPosition(Scanner scanner) {
         System.out.println(MAGENTA + "=== THÊM VỊ TRÍ TUYỂN DỤNG ===" + RESET);
@@ -363,8 +354,6 @@ public class RecruitmentPositionUI {
         } else {
             System.out.println(RED + "Thêm vị trí tuyển dụng thất bại: " + getErrorMessage(result) + RESET);
         }
-        System.out.println(MAGENTA + "Nhấn Enter để quay lại..." + RESET);
-        scanner.nextLine();
     }
 
     private static void updateRecruitmentPosition(Scanner scanner) {
@@ -474,7 +463,6 @@ public class RecruitmentPositionUI {
             System.out.println(CYAN + "1. Thêm công nghệ");
             System.out.println("2. Xóa công nghệ");
             System.out.println("3. Quay lại" + RESET);
-            System.out.print(MAGENTA + "Lựa chọn của bạn: " + RESET);
             try {
                 int choice = Validator.validateChoice(scanner);
                 switch (choice) {

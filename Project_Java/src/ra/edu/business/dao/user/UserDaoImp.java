@@ -1,6 +1,7 @@
 package ra.edu.business.dao.user;
 
 import ra.edu.business.config.ConnectionDB;
+import ra.edu.business.model.user.Status;
 import ra.edu.business.model.user.User;
 
 import java.io.*;
@@ -159,7 +160,7 @@ public class UserDaoImp implements UserDao {
         try {
             conn = ConnectionDB.openConnection();
             conn.setAutoCommit(false);
-            callStmt = conn.prepareCall("{call sp_GetUserById(?,?)}");
+            callStmt = conn.prepareCall("{call sp_GetUserById(?)}");
             callStmt.setInt(1, id);
             rs = callStmt.executeQuery();
             if (rs.next()) {
@@ -167,6 +168,7 @@ public class UserDaoImp implements UserDao {
                 user.setId(rs.getInt("id"));
                 user.setUsername(rs.getString("username"));
                 user.setPassword(rs.getString("password"));
+                user.setStatus(Status.valueOf(rs.getString("status").toUpperCase()));
             } else {
                 System.out.println("Không tìm thấy người dùng với ID: " + id);
             }

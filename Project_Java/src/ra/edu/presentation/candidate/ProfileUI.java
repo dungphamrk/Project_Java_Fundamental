@@ -63,17 +63,17 @@ public class ProfileUI {
         }
 
         System.out.println(MAGENTA + "=== THÔNG TIN CÁ NHÂN HIỆN TẠI ===" + RESET);
-        System.out.println(YELLOW + "+----+-----------------------------+");
-        System.out.println("| STT| Thông tin                   |");
-        System.out.println("+----+-----------------------------+" + RESET);
-        System.out.printf(WHITE + "| %-2d | %-27s |%n", 1, "Tên: " + candidate.getName());
-        System.out.printf("| %-2d | %-27s |%n", 2, "Email: " + candidate.getEmail());
-        System.out.printf("| %-2d | %-27s |%n", 3, "Số điện thoại: " + candidate.getPhone());
-        System.out.printf("| %-2d | %-27s |%n", 4, "Kinh nghiệm: " + candidate.getExperience() + " năm");
-        System.out.printf("| %-2d | %-27s |%n", 5, "Giới tính: " + candidate.getGender());
-        System.out.printf("| %-2d | %-27s |%n", 6, "Ngày sinh: " + (candidate.getDob() != null ? candidate.getDob() : "Chưa thiết lập"));
-        System.out.printf("| %-2d | %-27s |%n", 7, "Mô tả: " + (candidate.getDescription() != null ? candidate.getDescription() : "Chưa thiết lập"));
-        System.out.println(YELLOW + "+----+-----------------------------+" + RESET);
+        System.out.println(YELLOW + "+----+---------------------------------------------------------------+");
+        System.out.println("| STT | Thông tin                   |");
+        System.out.println("+----+---------------------------------------------------------------+" + RESET);
+        System.out.printf(WHITE + "| %-3d | %-60s |%n", 1, "Tên: " + candidate.getName());
+        System.out.printf("| %-3d | %-60s |%n", 2, "Email: " + candidate.getEmail());
+        System.out.printf("| %-3d | %-60s |%n", 3, "Số điện thoại: " + candidate.getPhone());
+        System.out.printf("| %-3d | %-60s |%n", 4, "Kinh nghiệm: " + candidate.getExperience() + " năm");
+        System.out.printf("| %-3d | %-60s |%n", 5, "Giới tính: " + candidate.getGender());
+        System.out.printf("| %-3d | %-60s |%n", 6, "Ngày sinh: " + (candidate.getDob() != null ? candidate.getDob() : "Chưa thiết lập"));
+        System.out.printf("| %-3d | %-60s |%n", 7, "Mô tả: " + (candidate.getDescription() != null ? candidate.getDescription() : "Chưa thiết lập"));
+        System.out.println(YELLOW + "+----+---------------------------------------------------------------+" + RESET);
 
         System.out.print(MAGENTA + "Chọn thông tin muốn cập nhật (1-7, nhập 0 để thoát): " + RESET);
         try {
@@ -81,7 +81,6 @@ public class ProfileUI {
             if (fieldChoice == 0) return;
 
             String newValue;
-            System.out.print(WHITE + "Nhập giá trị mới: " + RESET);
             switch (fieldChoice) {
                 case 1:
                     newValue = CandidateValidator.inputName(scanner);
@@ -108,7 +107,12 @@ public class ProfileUI {
                     System.out.println(RED + "Lựa chọn không hợp lệ!" + RESET);
                     return;
             }
-            candidateService.updateField(userId, String.valueOf(fieldChoice), newValue);
+            int result = candidateService.updateField(userId, String.valueOf(fieldChoice), newValue);
+            if (result==0){
+                System.out.println(GREEN+ "Cập nhập thành công" + RESET);
+            }else {
+                System.out.println(RED + "Cập nhập ko thành công" + RESET);
+            }
         } catch (NumberFormatException e) {
             System.out.println(RED + "Vui lòng nhập số từ 0-7" + RESET);
         }
